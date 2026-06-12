@@ -6,6 +6,8 @@
 
 <meta charset="UTF-8">
 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>OurCase</title>
 
 
@@ -13,18 +15,20 @@
 
 *{
 box-sizing:border-box;
-font-family:"Tahoma", Arial, sans-serif;
+font-family:"Tahoma",Arial,sans-serif;
 }
 
 
 body{
 
 margin:0;
-height:100vh;
+min-height:100vh;
 
 display:flex;
 justify-content:center;
 align-items:center;
+
+padding:20px;
 
 background:
 radial-gradient(circle,#5b0000,#050505 70%);
@@ -35,17 +39,20 @@ color:white;
 
 
 
+
+
 .container{
 
-width:430px;
+width:100%;
+max-width:450px;
 
-padding:40px;
+padding:35px 25px;
 
 background:rgba(0,0,0,.85);
 
 border:1px solid #8b0000;
 
-border-radius:20px;
+border-radius:22px;
 
 box-shadow:
 0 0 30px #900000,
@@ -53,25 +60,25 @@ inset 0 0 20px #000;
 
 text-align:center;
 
-animation:show .8s;
+animation:show .7s;
 
 }
 
 
 
 
+
 .logo{
 
-font-size:48px;
+font-size:clamp(35px,10vw,55px);
 
 font-weight:bold;
 
-letter-spacing:4px;
+letter-spacing:3px;
 
 color:#d40000;
 
-text-shadow:
-0 0 20px red;
+text-shadow:0 0 20px red;
 
 }
 
@@ -82,16 +89,18 @@ text-shadow:
 
 color:#aaa;
 
-font-size:17px;
+font-size:clamp(14px,4vw,18px);
 
-margin-bottom:30px;
+margin-bottom:25px;
 
 }
 
 
 
 
+
 input{
+
 
 width:100%;
 
@@ -103,13 +112,14 @@ border:1px solid #700;
 
 color:white;
 
-border-radius:10px;
+border-radius:12px;
 
-font-size:18px;
+font-size:16px;
 
 text-align:center;
 
 outline:none;
+
 
 }
 
@@ -118,6 +128,7 @@ outline:none;
 
 
 button{
+
 
 margin-top:15px;
 
@@ -131,15 +142,17 @@ color:white;
 
 border:none;
 
-border-radius:10px;
+border-radius:12px;
 
-font-size:18px;
+font-size:17px;
 
 cursor:pointer;
 
 transition:.2s;
 
+
 }
+
 
 
 
@@ -148,9 +161,10 @@ button:hover{
 
 background:#d00000;
 
-transform:scale(1.05);
+transform:scale(1.03);
 
 }
+
 
 
 
@@ -172,6 +186,10 @@ margin-top:15px;
 
 width:100%;
 
+max-height:70vh;
+
+object-fit:contain;
+
 border-radius:15px;
 
 border:1px solid #900000;
@@ -181,10 +199,8 @@ box-shadow:
 0 0 25px #900000;
 
 
-animation:show .5s;
-
-
 }
+
 
 
 
@@ -196,7 +212,7 @@ from{
 
 opacity:0;
 
-transform:translateY(40px);
+transform:translateY(30px);
 
 }
 
@@ -214,6 +230,57 @@ transform:translateY(0);
 
 
 
+
+
+/* الهاتف */
+
+@media(max-width:500px){
+
+
+.container{
+
+padding:25px 18px;
+
+border-radius:18px;
+
+}
+
+
+input,button{
+
+font-size:16px;
+
+padding:14px;
+
+}
+
+
+}
+
+
+
+
+
+
+
+/* الشاشات الكبيرة */
+
+
+@media(min-width:900px){
+
+
+.container{
+
+max-width:500px;
+
+padding:45px;
+
+}
+
+
+}
+
+
 </style>
 
 
@@ -221,11 +288,15 @@ transform:translateY(0);
 
 
 
+
 <body>
 
 
 
+
 <div class="container">
+
+
 
 
 
@@ -234,6 +305,7 @@ transform:translateY(0);
 OurCase
 
 </div>
+
 
 
 
@@ -247,7 +319,10 @@ OurCase
 
 
 
+
 <div id="login">
+
+
 
 
 
@@ -271,11 +346,16 @@ placeholder="أدخل رمز القضية">
 
 
 
+
+
 <p id="error"></p>
 
 
 
+
+
 </div>
+
 
 
 
@@ -296,7 +376,10 @@ placeholder="أدخل رمز القضية">
 
 
 
+
+
 </div>
+
 
 
 
@@ -311,22 +394,20 @@ function check(){
 
 
 let password =
-
 document.getElementById("pass").value;
-
 
 
 
 if(password=="1234"){
 
 
-
 document.getElementById("login").style.display="none";
+
 
 document.querySelector(".subtitle").style.display="none";
 
-document.getElementById("content").style.display="block";
 
+document.getElementById("content").style.display="block";
 
 
 }
@@ -335,7 +416,6 @@ else{
 
 
 document.getElementById("error").innerHTML =
-
 "رمز خاطئ ❌";
 
 
@@ -352,6 +432,9 @@ document.getElementById("error").innerHTML =
 
 
 
+
+
 </body>
+
 
 </html>
