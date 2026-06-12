@@ -1,184 +1,357 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="ar" dir="rtl">
+
 <head>
+
 <meta charset="UTF-8">
-<title>My Game</title>
+
+<title>OurCase</title>
+
 
 <style>
+
 *{
-    box-sizing:border-box;
-    font-family:Arial, sans-serif;
+box-sizing:border-box;
+font-family:"Tahoma", Arial, sans-serif;
 }
+
 
 body{
-    margin:0;
-    height:100vh;
-    background:
-    radial-gradient(circle at top,#333,#080808);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    color:white;
+
+margin:0;
+height:100vh;
+
+display:flex;
+justify-content:center;
+align-items:center;
+
+background:
+radial-gradient(circle,#5b0000,#050505 70%);
+
+color:white;
+
 }
+
+
 
 .container{
-    width:420px;
-    padding:35px;
-    background:rgba(255,255,255,0.08);
-    backdrop-filter:blur(15px);
-    border-radius:25px;
-    box-shadow:0 0 40px #000;
-    text-align:center;
-    animation:appear .8s;
+
+width:430px;
+
+padding:40px;
+
+background:rgba(0,0,0,.85);
+
+border:1px solid #8b0000;
+
+border-radius:20px;
+
+box-shadow:
+0 0 30px #900000,
+inset 0 0 20px #000;
+
+text-align:center;
+
+animation:show .8s;
+
 }
 
-h1{
-    font-size:40px;
-    margin-bottom:5px;
+
+
+
+.logo{
+
+font-size:48px;
+
+font-weight:bold;
+
+letter-spacing:4px;
+
+color:#d40000;
+
+text-shadow:
+0 0 20px red;
+
 }
+
+
+
 
 .subtitle{
-    color:#aaa;
-    margin-bottom:30px;
+
+color:#aaa;
+
+font-size:17px;
+
+margin-bottom:30px;
+
 }
+
+
+
 
 input{
-    width:100%;
-    padding:15px;
-    border-radius:12px;
-    border:none;
-    outline:none;
-    font-size:18px;
-    margin-bottom:15px;
+
+width:100%;
+
+padding:15px;
+
+background:#111;
+
+border:1px solid #700;
+
+color:white;
+
+border-radius:10px;
+
+font-size:18px;
+
+text-align:center;
+
+outline:none;
+
 }
+
+
+
+
 
 button{
-    width:100%;
-    padding:15px;
-    border:none;
-    border-radius:12px;
-    background:#ffcc00;
-    font-size:18px;
-    font-weight:bold;
-    cursor:pointer;
-    transition:.2s;
+
+margin-top:15px;
+
+width:100%;
+
+padding:15px;
+
+background:#9b0000;
+
+color:white;
+
+border:none;
+
+border-radius:10px;
+
+font-size:18px;
+
+cursor:pointer;
+
+transition:.2s;
+
 }
+
+
+
 
 button:hover{
-    transform:scale(1.05);
+
+background:#d00000;
+
+transform:scale(1.05);
+
 }
 
-.card{
-    margin-top:20px;
-    padding:20px;
-    background:rgba(255,255,255,.1);
-    border-radius:15px;
-}
 
-a{
-    display:block;
-    margin:12px;
-    padding:12px;
-    border-radius:10px;
-    background:#222;
-    color:white;
-    text-decoration:none;
-    transition:.2s;
-}
 
-a:hover{
-    background:#ffcc00;
-    color:black;
-}
 
 #error{
-    color:#ff5555;
-    margin-top:10px;
+
+color:#ff3333;
+
+margin-top:15px;
+
 }
 
-@keyframes appear{
-    from{
-        opacity:0;
-        transform:translateY(30px);
-    }
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
+
+
+
+
+.case-image{
+
+
+width:100%;
+
+border-radius:15px;
+
+border:1px solid #900000;
+
+
+box-shadow:
+0 0 25px #900000;
+
+
+animation:show .5s;
+
+
 }
+
+
+
+
+@keyframes show{
+
+
+from{
+
+opacity:0;
+
+transform:translateY(40px);
+
+}
+
+
+to{
+
+opacity:1;
+
+transform:translateY(0);
+
+}
+
+
+}
+
+
 
 </style>
 
+
 </head>
+
+
 
 <body>
 
+
+
 <div class="container">
 
-<h1>🎲 MY GAME</h1>
-<p class="subtitle">Enter the secret code to unlock</p>
+
+
+<div class="logo">
+
+OurCase
+
+</div>
+
+
+
+<p class="subtitle">
+
+ملفات التحقيق السرية
+
+</p>
+
+
+
 
 
 <div id="login">
 
-<input id="pass" type="password" placeholder="Password">
+
+
+<input
+
+id="pass"
+
+type="password"
+
+placeholder="أدخل رمز القضية">
+
+
+
+
 
 <button onclick="check()">
-Unlock 🔓
+
+فتح القضية 🔍
+
 </button>
+
+
 
 <p id="error"></p>
 
+
+
 </div>
+
+
+
+
 
 
 <div id="content" style="display:none">
 
-<div class="card">
 
-<h2>Welcome Player 🏆</h2>
 
-<a href="rules.pdf">📖 Game Rules</a>
+<img src="case.jpg" class="case-image">
 
-<a href="cards.pdf">🃏 Cards File</a>
 
-<a href="board.pdf">🎯 Board</a>
-
-</div>
 
 </div>
 
 
+
+
+
 </div>
+
+
+
+
+
 
 
 <script>
 
+
 function check(){
 
+
 let password =
+
 document.getElementById("pass").value;
+
+
 
 
 if(password=="1234"){
 
+
+
 document.getElementById("login").style.display="none";
 
+document.querySelector(".subtitle").style.display="none";
+
 document.getElementById("content").style.display="block";
+
+
 
 }
 
 else{
 
-document.getElementById("error").innerHTML=
-"Wrong password ❌";
+
+document.getElementById("error").innerHTML =
+
+"رمز خاطئ ❌";
+
 
 }
 
+
+
 }
+
+
 
 </script>
 
 
+
+
 </body>
+
 </html>
