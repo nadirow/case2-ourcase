@@ -20,13 +20,17 @@ font-family:Tahoma,Arial,sans-serif;
 }
 
 
+
 body{
 
 margin:0;
+
 min-height:100vh;
 
 display:flex;
+
 justify-content:center;
+
 align-items:center;
 
 background:#f5f7fb;
@@ -39,46 +43,70 @@ padding:20px;
 
 .container{
 
+
 width:100%;
+
 max-width:430px;
+
 
 background:white;
 
+
 padding:35px 25px;
+
 
 border-radius:22px;
 
+
 border-top:5px solid #d40000;
 
-box-shadow:0 10px 35px rgba(0,0,0,.12);
+
+box-shadow:
+
+0 10px 35px rgba(0,0,0,.12);
+
 
 text-align:center;
 
+
 }
+
 
 
 
 .logo-img{
 
+
 width:180px;
+
 
 max-width:85%;
 
+
 margin-bottom:15px;
 
+
 }
+
+
 
 
 
 .subtitle{
 
+
 color:#777;
+
 
 font-size:17px;
 
+
 margin-bottom:25px;
 
+
 }
+
+
 
 
 
@@ -89,9 +117,12 @@ margin-bottom:25px;
 
 display:flex;
 
+
 justify-content:center;
 
+
 gap:12px;
+
 
 direction:ltr;
 
@@ -100,10 +131,15 @@ direction:ltr;
 
 
 
+
+
+
+
 .pin-box{
 
 
 width:60px;
+
 
 height:60px;
 
@@ -137,10 +173,14 @@ background:#fafafa;
 
 border-color:#d40000;
 
+
 box-shadow:0 0 12px #ffcaca;
 
 
 }
+
+
+
 
 
 
@@ -149,7 +189,9 @@ button{
 
 width:100%;
 
+
 margin-top:20px;
+
 
 padding:15px;
 
@@ -176,6 +218,7 @@ cursor:pointer;
 
 
 
+
 button:hover{
 
 
@@ -193,9 +236,12 @@ background:#a80000;
 
 color:#d40000;
 
+
 margin-top:15px;
 
+
 }
+
 
 
 
@@ -207,10 +253,18 @@ margin-top:15px;
 width:100%;
 
 
+margin-top:15px;
+
+
 border-radius:15px;
 
 
 border:1px solid #eee;
+
+
+box-shadow:
+
+0 5px 20px rgba(0,0,0,.1);
 
 
 }
@@ -219,9 +273,43 @@ border:1px solid #eee;
 
 
 
+
+@media(max-width:500px){
+
+
+.pin-box{
+
+
+width:55px;
+
+
+height:55px;
+
+
+}
+
+
+
+.container{
+
+
+padding:25px 18px;
+
+
+}
+
+
+
+}
+
+
+
+
 </style>
 
+
 </head>
+
 
 
 
@@ -229,11 +317,19 @@ border:1px solid #eee;
 
 
 
+
+
 <div class="container">
 
 
 
+
+
+
 <img src="logo white1 (2).png" class="logo-img">
+
+
+
 
 
 
@@ -247,23 +343,32 @@ border:1px solid #eee;
 
 
 
+
+
 <div id="login">
+
+
 
 
 
 <div class="pin-boxes">
 
 
-<input class="pin-box" maxlength="1" inputmode="numeric">
 
 <input class="pin-box" maxlength="1" inputmode="numeric">
 
 <input class="pin-box" maxlength="1" inputmode="numeric">
 
 <input class="pin-box" maxlength="1" inputmode="numeric">
+
+<input class="pin-box" maxlength="1" inputmode="numeric">
+
 
 
 </div>
+
+
+
 
 
 
@@ -274,11 +379,21 @@ border:1px solid #eee;
 </button>
 
 
+
+
+
 <p id="error"></p>
 
 
 
+
+
+
 </div>
+
+
+
+
 
 
 
@@ -287,7 +402,19 @@ border:1px solid #eee;
 <div id="content" style="display:none">
 
 
-<img src="case.jpg" class="case-image">
+
+
+
+
+<img src="whatsapp_chat.png" class="case-image">
+
+
+
+<img src="case 002.png" class="case-image">
+
+
+
+
 
 
 </div>
@@ -295,7 +422,15 @@ border:1px solid #eee;
 
 
 
+
+
+
+
 </div>
+
+
+
+
 
 
 
@@ -304,48 +439,90 @@ border:1px solid #eee;
 <script>
 
 
+
+
 let boxes = document.querySelectorAll(".pin-box");
+
+
+
 
 
 
 boxes.forEach((box,index)=>{
 
 
+
+
+
 box.addEventListener("input",()=>{
+
+
+
 
 
 if(box.value && index < boxes.length-1){
 
+
 boxes[index+1].focus();
 
+
 }
+
+
+
 
 
 if(index===3){
 
+
 check();
+
 
 }
 
 
+
+
+
 });
+
+
+
+
+
+
 
 
 
 box.addEventListener("keydown",(e)=>{
 
 
+
+
+
 if(e.key==="Backspace" && !box.value && index>0){
 
+
 boxes[index-1].focus();
+
 
 }
 
 
+
+
+
 });
 
 
+
+
+
+
 });
+
+
+
 
 
 
@@ -355,27 +532,49 @@ boxes[index-1].focus();
 function check(){
 
 
+
+
+
 let pin="";
 
 
-boxes.forEach(b=>{
 
-pin += b.value;
+
+
+
+boxes.forEach(box=>{
+
+
+pin += box.value;
+
 
 });
+
+
+
+
 
 
 
 if(pin==="8519"){
 
 
+
+
+
 document.getElementById("login").style.display="none";
+
 
 
 document.querySelector(".subtitle").style.display="none";
 
 
+
 document.getElementById("content").style.display="block";
+
+
+
+
 
 
 }
@@ -383,30 +582,54 @@ document.getElementById("content").style.display="block";
 else if(pin.length===4){
 
 
+
+
+
 document.getElementById("error").innerHTML=
 
 "PIN خاطئ ❌";
 
 
-boxes.forEach(b=>b.value="");
+
+
+
+boxes.forEach(box=>box.value="");
+
 
 
 boxes[0].focus();
+
+
+
 
 
 }
 
 
 
+
+
+
 }
 
 
 
+
+
+
+
 boxes[0].focus();
+
+
+
 
 
 
 </script>
+
+
+
+
 
 
 
