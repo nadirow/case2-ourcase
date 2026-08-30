@@ -1,0 +1,3533 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Money Tracker</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f5f7;
+    color: #111827;
+    min-height: 100vh;
+}
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+#loginPage {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.login-box {
+    width: 100%;
+    max-width: 420px;
+    background: white;
+    padding: 40px;
+    border-radius: 24px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.08);
+    text-align: center;
+}
+
+.login-box h1 {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.login-box p {
+    color: #6b7280;
+    margin-bottom: 30px;
+}
+
+.user-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.user-button {
+    flex: 1;
+    border: none;
+    padding: 22px;
+    border-radius: 16px;
+    background: #111827;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.user-button:hover {
+    transform: translateY(-3px);
+    background: #000;
+}
+
+/* =====================================================
+   APP
+===================================================== */
+
+#appPage {
+    display: none;
+    max-width: 950px;
+    margin: auto;
+    padding: 25px 18px 50px;
+}
+
+/* =====================================================
+   VIEWS
+===================================================== */
+
+#trackerView,
+#debtView,
+#debtPersonView,
+#privateUserView {
+    display: none;
+}
+
+#trackerView {
+    display: block;
+}
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.header h1 {
+    font-size: 26px;
+}
+
+.user-badge {
+    background: white;
+    padding: 10px 16px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    font-weight: bold;
+}
+
+/* =====================================================
+   USER PRIVATE SUMMARY
+===================================================== */
+
+.user-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.profile-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.profile-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.09);
+}
+
+.profile-card:active {
+    transform: scale(0.99);
+}
+
+.profile-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.profile-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #111827;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.profile-name {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.profile-label {
+    color: #9ca3af;
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.profile-stat {
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 12px;
+}
+
+.profile-stat-label {
+    color: #6b7280;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.profile-stat-value {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.profile-stat-value.spent {
+    color: #dc2626;
+}
+
+.profile-stat-value.added {
+    color: #16a34a;
+}
+
+/* =====================================================
+   BALANCE
+===================================================== */
+
+.balance-card {
+    background: #111827;
+    color: white;
+    border-radius: 25px;
+    padding: 35px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: 0.2s;
+    position: relative;
+}
+
+.balance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.balance-card:active {
+    transform: scale(0.99);
+}
+
+.balance-label {
+    color: #9ca3af;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.balance {
+    font-size: 48px;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.balance-hint {
+    margin-top: 10px;
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+/* =====================================================
+   ACTIONS
+===================================================== */
+
+.actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.action-button {
+    border: none;
+    border-radius: 18px;
+    padding: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+}
+
+.add-button {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.remove-button {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* =====================================================
+   FORM
+===================================================== */
+
+.form-card {
+    display: none;
+    background: white;
+    padding: 25px;
+    border-radius: 22px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+.form-card h2 {
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 7px;
+    font-weight: bold;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    padding: 13px;
+    border-radius: 12px;
+    font-size: 16px;
+    outline: none;
+    font-family: inherit;
+    background: white;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: #111827;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.submit-button,
+.cancel-button {
+    border: none;
+    padding: 14px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.submit-button {
+    background: #111827;
+    color: white;
+    flex: 1;
+}
+
+.cancel-button {
+    background: #e5e7eb;
+}
+
+/* =====================================================
+   FILTERS
+===================================================== */
+
+.filters-card {
+    background: white;
+    padding: 20px;
+    border-radius: 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+.filters-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.filters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.filter-group label {
+    display: block;
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.clear-filters {
+    border: none;
+    background: #f3f4f6;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+}
+
+/* =====================================================
+   HISTORY
+===================================================== */
+
+.history-card {
+    background: white;
+    border-radius: 22px;
+    padding: 25px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+.history-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.history-title h2 {
+    font-size: 21px;
+}
+
+.refresh-button {
+    border: none;
+    background: #f3f4f6;
+    padding: 9px 13px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.refresh-button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+/* =====================================================
+   TRANSACTION
+===================================================== */
+
+.transaction {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 16px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.transaction:last-child {
+    border-bottom: none;
+}
+
+.transaction-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.transaction-icon.add {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.transaction-icon.remove {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.transaction-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.transaction-main {
+    font-weight: bold;
+    word-break: break-word;
+}
+
+.transaction-sub {
+    color: #6b7280;
+    font-size: 13px;
+    margin-top: 4px;
+    word-break: break-word;
+}
+
+.transaction-amount {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.transaction-amount.add {
+    color: #16a34a;
+}
+
+.transaction-amount.remove {
+    color: #dc2626;
+}
+
+/* =====================================================
+   UNDO
+===================================================== */
+
+.undo-button {
+    border: none;
+    background: #f3f4f6;
+    color: #374151;
+    padding: 8px 11px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.undo-button:hover {
+    background: #e5e7eb;
+}
+
+.undo-time {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 4px;
+    text-align: right;
+}
+
+/* =====================================================
+   SHARED DETAIL PAGE
+===================================================== */
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.back-button {
+    border: none;
+    background: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 13px;
+    font-size: 22px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+
+.back-button:hover {
+    background: #f9fafb;
+}
+
+.detail-header-text h1 {
+    font-size: 27px;
+}
+
+.detail-header-text p {
+    color: #6b7280;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+/* =====================================================
+   DEBT PAGE
+===================================================== */
+
+.debt-total-card {
+    background: #111827;
+    color: white;
+    border-radius: 25px;
+    padding: 30px;
+    margin-bottom: 20px;
+}
+
+.debt-total-label {
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 13px;
+}
+
+.debt-total {
+    font-size: 38px;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.debt-person {
+    background: white;
+    border-radius: 22px;
+    padding: 22px;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.debt-person:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.09);
+}
+
+.debt-person:active {
+    transform: scale(0.99);
+}
+
+.debt-person-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.debt-person-icon {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    border-radius: 50%;
+    background: #111827;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 19px;
+}
+
+.debt-person-name {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.debt-person-status {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.debt-amount {
+    margin-left: auto;
+    text-align: right;
+}
+
+.debt-amount-number {
+    font-size: 21px;
+    font-weight: bold;
+}
+
+.debt-amount-number.receive {
+    color: #16a34a;
+}
+
+.debt-amount-number.give {
+    color: #dc2626;
+}
+
+.debt-amount-number.settled {
+    color: #6b7280;
+}
+
+.debt-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.debt-stat {
+    background: #f9fafb;
+    padding: 13px;
+    border-radius: 12px;
+}
+
+.debt-stat-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 5px;
+}
+
+.debt-stat-value {
+    font-weight: bold;
+}
+
+.debt-stat-value.added {
+    color: #16a34a;
+}
+
+.debt-stat-value.removed {
+    color: #dc2626;
+}
+
+.debt-empty {
+    background: white;
+    padding: 40px 20px;
+    border-radius: 22px;
+    text-align: center;
+    color: #9ca3af;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+/* =====================================================
+   DETAIL SUMMARY
+===================================================== */
+
+.detail-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.detail-stat-card {
+    background: white;
+    padding: 18px;
+    border-radius: 18px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+.detail-stat-label {
+    color: #6b7280;
+    font-size: 12px;
+    margin-bottom: 7px;
+}
+
+.detail-stat-value {
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.detail-stat-value.green {
+    color: #16a34a;
+}
+
+.detail-stat-value.red {
+    color: #dc2626;
+}
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+.status {
+    text-align: center;
+    font-size: 13px;
+    color: #9ca3af;
+    margin-top: 12px;
+}
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+.logout {
+    display: block;
+    margin: 20px auto 0;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+    .filters {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .user-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+
+}
+
+@media (max-width: 600px) {
+
+    .actions {
+        grid-template-columns: 1fr;
+    }
+
+    .balance {
+        font-size: 38px;
+    }
+
+    .balance-card {
+        padding: 28px;
+    }
+
+    .login-box {
+        padding: 30px 20px;
+    }
+
+    .transaction {
+        gap: 9px;
+        align-items: flex-start;
+    }
+
+    .transaction-amount {
+        font-size: 14px;
+    }
+
+    .debt-person-top {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .debt-amount {
+        margin-left: 0;
+        width: 100%;
+        text-align: left;
+    }
+
+    .detail-summary {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- =====================================================
+     LOGIN
+===================================================== -->
+
+<div id="loginPage">
+
+    <div class="login-box">
+
+        <h1>Money Tracker</h1>
+
+        <p>Select your user</p>
+
+        <div class="user-buttons">
+
+            <button
+                class="user-button"
+                onclick="login('I')">
+                I
+            </button>
+
+            <button
+                class="user-button"
+                onclick="login('N')">
+                N
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =====================================================
+     APP
+===================================================== -->
+
+<div id="appPage">
+
+<!-- =====================================================
+     TRACKER VIEW
+===================================================== -->
+
+<div id="trackerView">
+
+    <div class="header">
+
+        <h1>Money Tracker</h1>
+
+        <div class="user-badge">
+            User:
+            <span id="currentUser"></span>
+        </div>
+
+    </div>
+
+    <!-- PRIVATE SUMMARY -->
+
+    <div class="user-summary">
+
+        <!-- I -->
+
+        <div
+            class="profile-card"
+            onclick="openPrivateUserView('I')">
+
+            <div class="profile-top">
+
+                <div class="profile-icon">
+                    I
+                </div>
+
+                <div>
+
+                    <div class="profile-name">
+                        I
+                    </div>
+
+                    <div class="profile-label">
+                        Private transactions
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="profile-stats">
+
+                <div class="profile-stat">
+
+                    <div class="profile-stat-label">
+                        Spent
+                    </div>
+
+                    <div
+                        class="profile-stat-value spent"
+                        id="privateSpentI">
+                        0 DA
+                    </div>
+
+                </div>
+
+                <div class="profile-stat">
+
+                    <div class="profile-stat-label">
+                        Added
+                    </div>
+
+                    <div
+                        class="profile-stat-value added"
+                        id="privateAddedI">
+                        0 DA
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- N -->
+
+        <div
+            class="profile-card"
+            onclick="openPrivateUserView('N')">
+
+            <div class="profile-top">
+
+                <div class="profile-icon">
+                    N
+                </div>
+
+                <div>
+
+                    <div class="profile-name">
+                        N
+                    </div>
+
+                    <div class="profile-label">
+                        Private transactions
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="profile-stats">
+
+                <div class="profile-stat">
+
+                    <div class="profile-stat-label">
+                        Spent
+                    </div>
+
+                    <div
+                        class="profile-stat-value spent"
+                        id="privateSpentN">
+                        0 DA
+                    </div>
+
+                </div>
+
+                <div class="profile-stat">
+
+                    <div class="profile-stat-label">
+                        Added
+                    </div>
+
+                    <div
+                        class="profile-stat-value added"
+                        id="privateAddedN">
+                        0 DA
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- TOTAL MONEY -->
+
+    <div
+        class="balance-card"
+        onclick="openDebtView()"
+        title="Click to view debts">
+
+        <div class="balance-label">
+            Total Money
+        </div>
+
+        <div
+            class="balance"
+            id="balance">
+            0 DA
+        </div>
+
+        <div class="balance-hint">
+            Click to view debts →
+        </div>
+
+    </div>
+
+    <!-- ACTIONS -->
+
+    <div class="actions">
+
+        <button
+            class="action-button add-button"
+            onclick="openForm('ADD')">
+            + Add Money
+        </button>
+
+        <button
+            class="action-button remove-button"
+            onclick="openForm('REMOVE')">
+            − Remove Money
+        </button>
+
+    </div>
+
+    <!-- FORM -->
+
+    <div
+        class="form-card"
+        id="formCard">
+
+        <h2 id="formTitle">
+            Add Money
+        </h2>
+
+        <div class="form-group">
+
+            <label>
+                Amount
+            </label>
+
+            <input
+                type="number"
+                id="amount"
+                placeholder="0"
+                min="0"
+                step="0.01">
+
+        </div>
+
+        <div class="form-group">
+
+            <label>
+                Where did it go? *
+            </label>
+
+            <select id="where">
+
+                <option value="">
+                    Select a category
+                </option>
+
+                <option value="Debt">
+                    Debt
+                </option>
+
+                <option value="Work">
+                    Work
+                </option>
+
+                <option value="Private">
+                    Private
+                </option>
+
+            </select>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>
+                Reason
+                <span style="color:#9ca3af">
+                    (optional)
+                </span>
+            </label>
+
+            <textarea
+                id="reason"
+                placeholder="Optional reason..."></textarea>
+
+        </div>
+
+        <div class="form-buttons">
+
+            <button
+                class="cancel-button"
+                onclick="closeForm()">
+                Cancel
+            </button>
+
+            <button
+                class="submit-button"
+                id="submitButton"
+                onclick="submitTransaction()">
+                Add Money
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- FILTERS -->
+
+    <div class="filters-card">
+
+        <div class="filters-title">
+            Filter Transactions
+        </div>
+
+        <div class="filters">
+
+            <div class="filter-group">
+
+                <label>
+                    Who
+                </label>
+
+                <select
+                    id="filterUser"
+                    onchange="applyFilters()">
+
+                    <option value="ALL">
+                        Everyone
+                    </option>
+
+                    <option value="I">
+                        I
+                    </option>
+
+                    <option value="N">
+                        N
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="filter-group">
+
+                <label>
+                    Type
+                </label>
+
+                <select
+                    id="filterType"
+                    onchange="applyFilters()">
+
+                    <option value="ALL">
+                        Added & Spent
+                    </option>
+
+                    <option value="ADD">
+                        Added
+                    </option>
+
+                    <option value="REMOVE">
+                        Spent
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="filter-group">
+
+                <label>
+                    From
+                </label>
+
+                <input
+                    type="date"
+                    id="filterFrom"
+                    onchange="applyFilters()">
+
+            </div>
+
+            <div class="filter-group">
+
+                <label>
+                    To
+                </label>
+
+                <input
+                    type="date"
+                    id="filterTo"
+                    onchange="applyFilters()">
+
+            </div>
+
+        </div>
+
+        <button
+            class="clear-filters"
+            onclick="clearFilters()"
+            style="margin-top:12px">
+
+            Clear Filters
+
+        </button>
+
+    </div>
+
+    <!-- HISTORY -->
+
+    <div class="history-card">
+
+        <div class="history-title">
+
+            <h2>
+                Transaction History
+            </h2>
+
+            <button
+                class="refresh-button"
+                id="refreshButton"
+                onclick="loadData()"
+                title="Refresh">
+
+                ↻
+
+            </button>
+
+        </div>
+
+        <div id="history">
+
+            <div class="empty">
+                Loading...
+            </div>
+
+        </div>
+
+    </div>
+
+    <div
+        class="status"
+        id="status">
+        Connected
+    </div>
+
+    <button
+        class="logout"
+        onclick="logout()">
+
+        Log out
+
+    </button>
+
+</div>
+
+<!-- =====================================================
+     DEBT VIEW
+===================================================== -->
+
+<div id="debtView">
+
+    <div class="detail-header">
+
+        <button
+            class="back-button"
+            onclick="closeDebtView()">
+
+            ←
+
+        </button>
+
+        <div class="detail-header-text">
+
+            <h1>
+                Debt
+            </h1>
+
+            <p>
+                Who owes who?
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="debt-total-card">
+
+        <div class="debt-total-label">
+            Debt Summary
+        </div>
+
+        <div
+            class="debt-total"
+            id="debtTotal">
+
+            0 DA
+
+        </div>
+
+    </div>
+
+    <div id="debtPeople">
+
+        <div class="debt-empty">
+            No debt transactions yet.
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =====================================================
+     DEBT PERSON DETAIL VIEW
+===================================================== -->
+
+<div id="debtPersonView">
+
+    <div class="detail-header">
+
+        <button
+            class="back-button"
+            onclick="closeDebtPersonView()">
+
+            ←
+
+        </button>
+
+        <div class="detail-header-text">
+
+            <h1 id="debtPersonTitle">
+                Person
+            </h1>
+
+            <p>
+                All debt transactions
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="detail-summary">
+
+        <div class="detail-stat-card">
+
+            <div class="detail-stat-label">
+                They gave us
+            </div>
+
+            <div
+                class="detail-stat-value green"
+                id="personDebtAdded">
+                0 DA
+            </div>
+
+        </div>
+
+        <div class="detail-stat-card">
+
+            <div class="detail-stat-label">
+                We gave them
+            </div>
+
+            <div
+                class="detail-stat-value red"
+                id="personDebtRemoved">
+                0 DA
+            </div>
+
+        </div>
+
+        <div class="detail-stat-card">
+
+            <div class="detail-stat-label">
+                Current balance
+            </div>
+
+            <div
+                class="detail-stat-value"
+                id="personDebtNet">
+                0 DA
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="history-card">
+
+        <div class="history-title">
+
+            <h2>
+                Transactions
+            </h2>
+
+        </div>
+
+        <div id="debtPersonHistory"></div>
+
+    </div>
+
+</div>
+
+<!-- =====================================================
+     PRIVATE USER DETAIL VIEW
+===================================================== -->
+
+<div id="privateUserView">
+
+    <div class="detail-header">
+
+        <button
+            class="back-button"
+            onclick="closePrivateUserView()">
+
+            ←
+
+        </button>
+
+        <div class="detail-header-text">
+
+            <h1 id="privateUserTitle">
+                Private Transactions
+            </h1>
+
+            <p>
+                All private transactions
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="detail-summary">
+
+        <div class="detail-stat-card">
+
+            <div class="detail-stat-label">
+                Added
+            </div>
+
+            <div
+                class="detail-stat-value green"
+                id="privateUserAdded">
+                0 DA
+            </div>
+
+        </div>
+
+        <div class="detail-stat-card">
+
+            <div class="detail-stat-label">
+                Spent
+            </div>
+
+            <div
+                class="detail-stat-value red"
+                id="privateUserSpent">
+                0 DA
+            </div>
+
+        </div>
+
+        <div class="detail-stat-card">
+
+            <div class="detail-stat-label">
+                Private balance
+            </div>
+
+            <div
+                class="detail-stat-value"
+                id="privateUserNet">
+                0 DA
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="history-card">
+
+        <div class="history-title">
+
+            <h2>
+                Transactions
+            </h2>
+
+        </div>
+
+        <div id="privateUserHistory"></div>
+
+    </div>
+
+</div>
+
+</div>
+
+<script>
+
+/* =====================================================
+   API
+===================================================== */
+
+const API_URL =
+"https://script.google.com/macros/s/AKfycbxOXY7VsbR5xXX4PbnNWHqt-LPLd-7aTIpn1Wm4IQiAK7X6VmO2jWEm-Q4uWbwJTPKU/exec";
+
+/* =====================================================
+   GLOBAL VARIABLES
+===================================================== */
+
+let currentUser = null;
+
+let transactionType = null;
+
+let allTransactions = [];
+
+let selectedDebtPerson = null;
+
+let selectedPrivateUser = null;
+
+/*
+   Used so refreshing does not destroy
+   the page the user is currently viewing.
+*/
+let currentView = "tracker";
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+function login(user) {
+
+    currentUser = user;
+
+    document
+        .getElementById("loginPage")
+        .style.display = "none";
+
+    document
+        .getElementById("appPage")
+        .style.display = "block";
+
+    document
+        .getElementById("currentUser")
+        .textContent = user;
+
+    showTracker();
+
+    loadData();
+}
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+function logout() {
+
+    currentUser = null;
+
+    allTransactions = [];
+
+    selectedDebtPerson = null;
+
+    selectedPrivateUser = null;
+
+    currentView = "tracker";
+
+    document
+        .getElementById("appPage")
+        .style.display = "none";
+
+    document
+        .getElementById("loginPage")
+        .style.display = "flex";
+
+    closeForm();
+}
+
+/* =====================================================
+   VIEW MANAGEMENT
+===================================================== */
+
+function hideAllViews() {
+
+    document
+        .getElementById("trackerView")
+        .style.display = "none";
+
+    document
+        .getElementById("debtView")
+        .style.display = "none";
+
+    document
+        .getElementById("debtPersonView")
+        .style.display = "none";
+
+    document
+        .getElementById("privateUserView")
+        .style.display = "none";
+}
+
+/* =====================================================
+   SHOW TRACKER
+===================================================== */
+
+function showTracker() {
+
+    hideAllViews();
+
+    document
+        .getElementById("trackerView")
+        .style.display = "block";
+
+    currentView = "tracker";
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+/* =====================================================
+   OPEN DEBT VIEW
+===================================================== */
+
+function openDebtView() {
+
+    updateDebtView(allTransactions);
+
+    hideAllViews();
+
+    document
+        .getElementById("debtView")
+        .style.display = "block";
+
+    currentView = "debt";
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+/* =====================================================
+   CLOSE DEBT VIEW
+===================================================== */
+
+function closeDebtView() {
+
+    showTracker();
+}
+
+/* =====================================================
+   OPEN DEBT PERSON VIEW
+===================================================== */
+
+function openDebtPersonView(personName) {
+
+    selectedDebtPerson = personName;
+
+    updateDebtPersonView(
+        allTransactions,
+        personName
+    );
+
+    hideAllViews();
+
+    document
+        .getElementById("debtPersonView")
+        .style.display = "block";
+
+    currentView = "debtPerson";
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+/* =====================================================
+   CLOSE DEBT PERSON VIEW
+===================================================== */
+
+function closeDebtPersonView() {
+
+    openDebtView();
+}
+
+/* =====================================================
+   OPEN PRIVATE USER VIEW
+===================================================== */
+
+function openPrivateUserView(user) {
+
+    selectedPrivateUser = user;
+
+    updatePrivateUserView(
+        allTransactions,
+        user
+    );
+
+    hideAllViews();
+
+    document
+        .getElementById("privateUserView")
+        .style.display = "block";
+
+    currentView = "privateUser";
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+/* =====================================================
+   CLOSE PRIVATE USER VIEW
+===================================================== */
+
+function closePrivateUserView() {
+
+    showTracker();
+}
+
+/* =====================================================
+   UPDATE DEBT VIEW
+===================================================== */
+
+function updateDebtView(transactions) {
+
+    const debtPeople =
+        document.getElementById(
+            "debtPeople"
+        );
+
+    const people = {};
+
+    transactions.forEach(transaction => {
+
+        if (
+            transaction.where !== "Debt"
+        ) {
+            return;
+        }
+
+        const personName =
+            String(
+                transaction.reason || ""
+            ).trim();
+
+        if (!personName) {
+            return;
+        }
+
+        if (!people[personName]) {
+
+            people[personName] = {
+                added: 0,
+                removed: 0
+            };
+
+        }
+
+        const amount =
+            Number(
+                transaction.amount
+            ) || 0;
+
+        if (
+            transaction.type === "ADD"
+        ) {
+
+            people[personName].added +=
+                amount;
+
+        }
+
+        if (
+            transaction.type === "REMOVE"
+        ) {
+
+            people[personName].removed +=
+                amount;
+
+        }
+
+    });
+
+    /*
+       IMPORTANT:
+       People whose added and removed
+       amounts are equal are removed
+       from the debt list.
+    */
+
+    const activeNames =
+        Object.keys(people).filter(name => {
+
+            const person =
+                people[name];
+
+            const difference =
+                Math.abs(
+                    person.added -
+                    person.removed
+                );
+
+            return difference > 0.001;
+
+        });
+
+    let totalNet = 0;
+
+    activeNames.forEach(name => {
+
+        const person =
+            people[name];
+
+        totalNet +=
+            person.added -
+            person.removed;
+
+    });
+
+    /*
+       Overall debt
+    */
+
+    if (activeNames.length === 0) {
+
+        document
+            .getElementById("debtTotal")
+            .textContent =
+            "All debts settled";
+
+    } else if (totalNet > 0) {
+
+        document
+            .getElementById("debtTotal")
+            .textContent =
+            "We should receive " +
+            formatMoney(totalNet);
+
+    } else {
+
+        document
+            .getElementById("debtTotal")
+            .textContent =
+            "We should give " +
+            formatMoney(
+                Math.abs(totalNet)
+            );
+
+    }
+
+    /*
+       No active debts
+    */
+
+    if (
+        activeNames.length === 0
+    ) {
+
+        debtPeople.innerHTML = `
+
+            <div class="debt-empty">
+
+                <div style="
+                    font-size:40px;
+                    margin-bottom:10px;
+                ">
+                    ✓
+                </div>
+
+                No active debts.
+
+                <br><br>
+
+                Everyone is settled.
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+    debtPeople.innerHTML = "";
+
+    activeNames.forEach(name => {
+
+        const person =
+            people[name];
+
+        const net =
+            person.added -
+            person.removed;
+
+        let statusText = "";
+
+        let amountText = "";
+
+        let amountClass = "";
+
+        if (net > 0) {
+
+            statusText =
+                "They should give us";
+
+            amountText =
+                formatMoney(net);
+
+            amountClass =
+                "receive";
+
+        } else {
+
+            statusText =
+                "We should give them";
+
+            amountText =
+                formatMoney(
+                    Math.abs(net)
+                );
+
+            amountClass =
+                "give";
+
+        }
+
+        const firstLetter =
+            escapeHTML(
+                name
+                    .charAt(0)
+                    .toUpperCase()
+            );
+
+        const div =
+            document.createElement("div");
+
+        div.className =
+            "debt-person";
+
+        div.onclick = function() {
+
+            openDebtPersonView(name);
+
+        };
+
+        div.innerHTML = `
+
+            <div class="debt-person-top">
+
+                <div class="debt-person-icon">
+                    ${firstLetter}
+                </div>
+
+                <div>
+
+                    <div class="debt-person-name">
+                        ${escapeHTML(name)}
+                    </div>
+
+                    <div class="debt-person-status">
+                        ${statusText}
+                    </div>
+
+                </div>
+
+                <div class="debt-amount">
+
+                    <div class="
+                        debt-amount-number
+                        ${amountClass}
+                    ">
+                        ${amountText}
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="debt-stats">
+
+                <div class="debt-stat">
+
+                    <div class="debt-stat-label">
+                        They gave us
+                    </div>
+
+                    <div class="
+                        debt-stat-value
+                        added
+                    ">
+                        ${formatMoney(
+                            person.added
+                        )}
+                    </div>
+
+                </div>
+
+                <div class="debt-stat">
+
+                    <div class="debt-stat-label">
+                        We gave them
+                    </div>
+
+                    <div class="
+                        debt-stat-value
+                        removed
+                    ">
+                        ${formatMoney(
+                            person.removed
+                        )}
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div style="
+                margin-top:15px;
+                color:#9ca3af;
+                font-size:12px;
+            ">
+                Click to view all transactions →
+            </div>
+
+        `;
+
+        debtPeople.appendChild(div);
+
+    });
+
+}
+
+/* =====================================================
+   DEBT PERSON DETAIL
+===================================================== */
+
+function updateDebtPersonView(
+    transactions,
+    personName
+) {
+
+    document
+        .getElementById("debtPersonTitle")
+        .textContent =
+        personName;
+
+    const personTransactions =
+        transactions.filter(
+            transaction => {
+
+                return (
+                    transaction.where === "Debt" &&
+                    String(
+                        transaction.reason || ""
+                    ).trim() === personName
+                );
+
+            }
+        );
+
+    let added = 0;
+
+    let removed = 0;
+
+    personTransactions.forEach(
+        transaction => {
+
+            const amount =
+                Number(
+                    transaction.amount
+                ) || 0;
+
+            if (
+                transaction.type === "ADD"
+            ) {
+
+                added += amount;
+
+            } else if (
+                transaction.type === "REMOVE"
+            ) {
+
+                removed += amount;
+
+            }
+
+        }
+    );
+
+    const net =
+        added - removed;
+
+    document
+        .getElementById("personDebtAdded")
+        .textContent =
+        formatMoney(added);
+
+    document
+        .getElementById("personDebtRemoved")
+        .textContent =
+        formatMoney(removed);
+
+    const netElement =
+        document.getElementById(
+            "personDebtNet"
+        );
+
+    if (net > 0) {
+
+        netElement.textContent =
+            "+" + formatMoney(net);
+
+        netElement.className =
+            "detail-stat-value green";
+
+    } else if (net < 0) {
+
+        netElement.textContent =
+            "-" +
+            formatMoney(
+                Math.abs(net)
+            );
+
+        netElement.className =
+            "detail-stat-value red";
+
+    } else {
+
+        netElement.textContent =
+            "Settled";
+
+        netElement.className =
+            "detail-stat-value";
+
+    }
+
+    displayTransactionsInElement(
+        personTransactions,
+        "debtPersonHistory"
+    );
+}
+
+/* =====================================================
+   PRIVATE USER DETAIL
+===================================================== */
+
+function updatePrivateUserView(
+    transactions,
+    user
+) {
+
+    document
+        .getElementById("privateUserTitle")
+        .textContent =
+        user + " — Private";
+
+    const privateTransactions =
+        transactions.filter(
+            transaction => {
+
+                return (
+                    transaction.where === "Private" &&
+                    transaction.user === user
+                );
+
+            }
+        );
+
+    let added = 0;
+
+    let spent = 0;
+
+    privateTransactions.forEach(
+        transaction => {
+
+            const amount =
+                Number(
+                    transaction.amount
+                ) || 0;
+
+            if (
+                transaction.type === "ADD"
+            ) {
+
+                added += amount;
+
+            }
+
+            if (
+                transaction.type === "REMOVE"
+            ) {
+
+                spent += amount;
+
+            }
+
+        }
+    );
+
+    const net =
+        added - spent;
+
+    document
+        .getElementById("privateUserAdded")
+        .textContent =
+        formatMoney(added);
+
+    document
+        .getElementById("privateUserSpent")
+        .textContent =
+        formatMoney(spent);
+
+    const netElement =
+        document.getElementById(
+            "privateUserNet"
+        );
+
+    if (net > 0) {
+
+        netElement.textContent =
+            "+" + formatMoney(net);
+
+        netElement.className =
+            "detail-stat-value green";
+
+    } else if (net < 0) {
+
+        netElement.textContent =
+            "-" +
+            formatMoney(
+                Math.abs(net)
+            );
+
+        netElement.className =
+            "detail-stat-value red";
+
+    } else {
+
+        netElement.textContent =
+            "0.00 DA";
+
+        netElement.className =
+            "detail-stat-value";
+
+    }
+
+    displayTransactionsInElement(
+        privateTransactions,
+        "privateUserHistory"
+    );
+}
+
+/* =====================================================
+   OPEN FORM
+===================================================== */
+
+function openForm(type) {
+
+    transactionType = type;
+
+    const form =
+        document.getElementById(
+            "formCard"
+        );
+
+    const title =
+        document.getElementById(
+            "formTitle"
+        );
+
+    const button =
+        document.getElementById(
+            "submitButton"
+        );
+
+    form.style.display =
+        "block";
+
+    if (type === "ADD") {
+
+        title.textContent =
+            "Add Money";
+
+        button.textContent =
+            "Add Money";
+
+    } else {
+
+        title.textContent =
+            "Remove Money";
+
+        button.textContent =
+            "Remove Money";
+
+    }
+
+    document
+        .getElementById("amount")
+        .focus();
+}
+
+/* =====================================================
+   CLOSE FORM
+===================================================== */
+
+function closeForm() {
+
+    document
+        .getElementById("formCard")
+        .style.display =
+        "none";
+
+    document
+        .getElementById("amount")
+        .value = "";
+
+    document
+        .getElementById("where")
+        .value = "";
+
+    document
+        .getElementById("reason")
+        .value = "";
+
+    transactionType = null;
+}
+
+/* =====================================================
+   SUBMIT
+===================================================== */
+
+async function submitTransaction() {
+
+    const amount =
+        Number(
+            document
+                .getElementById("amount")
+                .value
+        );
+
+    const where =
+        document
+            .getElementById("where")
+            .value
+            .trim();
+
+    const reason =
+        document
+            .getElementById("reason")
+            .value
+            .trim();
+
+    if (
+        !amount ||
+        amount <= 0
+    ) {
+
+        alert(
+            "Please enter a valid amount."
+        );
+
+        return;
+
+    }
+
+    if (!currentUser) {
+
+        alert(
+            "Please login first."
+        );
+
+        return;
+
+    }
+
+    if (!transactionType) {
+
+        alert(
+            "Please choose Add or Remove."
+        );
+
+        return;
+
+    }
+
+    if (
+        where !== "Debt" &&
+        where !== "Work" &&
+        where !== "Private"
+    ) {
+
+        alert(
+            "Please select a category."
+        );
+
+        return;
+
+    }
+
+    if (
+        where === "Debt" &&
+        !reason
+    ) {
+
+        alert(
+            "For a Debt transaction, please enter the person's name in Reason."
+        );
+
+        document
+            .getElementById("reason")
+            .focus();
+
+        return;
+
+    }
+
+    const button =
+        document.getElementById(
+            "submitButton"
+        );
+
+    button.disabled = true;
+
+    button.textContent =
+        "Saving...";
+
+    setStatus(
+        "Saving transaction..."
+    );
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL,
+                {
+                    method: "POST",
+
+                    body:
+                        JSON.stringify({
+
+                            action:
+                                "addTransaction",
+
+                            user:
+                                currentUser,
+
+                            type:
+                                transactionType,
+
+                            amount:
+                                amount,
+
+                            where:
+                                where,
+
+                            reason:
+                                reason
+
+                        })
+                }
+            );
+
+        const result =
+            await response.json();
+
+        if (!result.success) {
+
+            throw new Error(
+                result.error ||
+                "Could not save transaction."
+            );
+
+        }
+
+        closeForm();
+
+        await loadData();
+
+        setStatus(
+            "Transaction saved ✓"
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Could not save transaction.\n\n" +
+            error.message
+        );
+
+        setStatus(
+            "Connection error"
+        );
+
+    } finally {
+
+        button.disabled = false;
+
+        button.textContent =
+            "Add Money";
+
+    }
+
+}
+
+/* =====================================================
+   LOAD DATA
+===================================================== */
+
+async function loadData() {
+
+    if (!currentUser) {
+        return;
+    }
+
+    const history =
+        document.getElementById(
+            "history"
+        );
+
+    const refreshButton =
+        document.getElementById(
+            "refreshButton"
+        );
+
+    /*
+       IMPORTANT:
+       Do NOT replace existing history
+       with "Loading..." during refresh.
+    */
+
+    const hadTransactions =
+        allTransactions.length > 0 ||
+        history.querySelector(
+            ".transaction"
+        ) !== null;
+
+    if (!hadTransactions) {
+
+        history.innerHTML =
+            '<div class="empty">Loading...</div>';
+
+    }
+
+    refreshButton.disabled =
+        true;
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL +
+                "?action=getTransactions"
+            );
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+
+            throw new Error(
+                data.error ||
+                "Could not load data."
+            );
+
+        }
+
+        /*
+           Replace data only after the
+           server successfully responds.
+        */
+
+        allTransactions =
+            data.transactions || [];
+
+        updateBalance(data.total);
+
+        updatePrivateStats(
+            allTransactions
+        );
+
+        applyFilters();
+
+        /*
+           Keep every open page updated
+           after auto refresh.
+        */
+
+        if (
+            currentView === "debt"
+        ) {
+
+            updateDebtView(
+                allTransactions
+            );
+
+        }
+
+        if (
+            currentView === "debtPerson" &&
+            selectedDebtPerson
+        ) {
+
+            updateDebtPersonView(
+                allTransactions,
+                selectedDebtPerson
+            );
+
+        }
+
+        if (
+            currentView === "privateUser" &&
+            selectedPrivateUser
+        ) {
+
+            updatePrivateUserView(
+                allTransactions,
+                selectedPrivateUser
+            );
+
+        }
+
+        setStatus(
+            "Last updated: " +
+            new Date()
+                .toLocaleTimeString()
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        /*
+           Existing transactions remain
+           visible if refresh fails.
+        */
+
+        if (!hadTransactions) {
+
+            history.innerHTML =
+                '<div class="empty">' +
+                'Could not load transactions.' +
+                '<br><br>' +
+                '<small>' +
+                escapeHTML(
+                    error.message
+                ) +
+                '</small>' +
+                '</div>';
+
+        }
+
+        setStatus(
+            "Connection error"
+        );
+
+    } finally {
+
+        refreshButton.disabled =
+            false;
+
+    }
+
+}
+
+/* =====================================================
+   BALANCE
+===================================================== */
+
+function updateBalance(total) {
+
+    document
+        .getElementById("balance")
+        .textContent =
+        formatMoney(total);
+
+}
+
+/* =====================================================
+   PRIVATE STATS
+===================================================== */
+
+function updatePrivateStats(
+    transactions
+) {
+
+    let spentI = 0;
+    let addedI = 0;
+
+    let spentN = 0;
+    let addedN = 0;
+
+    transactions.forEach(
+        transaction => {
+
+            if (
+                transaction.where !==
+                "Private"
+            ) {
+                return;
+            }
+
+            const amount =
+                Number(
+                    transaction.amount
+                ) || 0;
+
+            if (
+                transaction.user === "I"
+            ) {
+
+                if (
+                    transaction.type === "REMOVE"
+                ) {
+                    spentI += amount;
+                }
+
+                if (
+                    transaction.type === "ADD"
+                ) {
+                    addedI += amount;
+                }
+
+            }
+
+            if (
+                transaction.user === "N"
+            ) {
+
+                if (
+                    transaction.type === "REMOVE"
+                ) {
+                    spentN += amount;
+                }
+
+                if (
+                    transaction.type === "ADD"
+                ) {
+                    addedN += amount;
+                }
+
+            }
+
+        }
+    );
+
+    document
+        .getElementById("privateSpentI")
+        .textContent =
+        formatMoney(spentI);
+
+    document
+        .getElementById("privateAddedI")
+        .textContent =
+        formatMoney(addedI);
+
+    document
+        .getElementById("privateSpentN")
+        .textContent =
+        formatMoney(spentN);
+
+    document
+        .getElementById("privateAddedN")
+        .textContent =
+        formatMoney(addedN);
+
+}
+
+/* =====================================================
+   FILTERS
+===================================================== */
+
+function applyFilters() {
+
+    const userFilter =
+        document
+            .getElementById("filterUser")
+            .value;
+
+    const typeFilter =
+        document
+            .getElementById("filterType")
+            .value;
+
+    const fromDate =
+        document
+            .getElementById("filterFrom")
+            .value;
+
+    const toDate =
+        document
+            .getElementById("filterTo")
+            .value;
+
+    const filtered =
+        allTransactions.filter(
+            transaction => {
+
+                if (
+                    userFilter !== "ALL" &&
+                    transaction.user !==
+                    userFilter
+                ) {
+
+                    return false;
+
+                }
+
+                if (
+                    typeFilter !== "ALL" &&
+                    transaction.type !==
+                    typeFilter
+                ) {
+
+                    return false;
+
+                }
+
+                const transactionDate =
+                    new Date(
+                        transaction.date
+                    );
+
+                if (fromDate) {
+
+                    const from =
+                        new Date(
+                            fromDate +
+                            "T00:00:00"
+                        );
+
+                    if (
+                        transactionDate <
+                        from
+                    ) {
+
+                        return false;
+
+                    }
+
+                }
+
+                if (toDate) {
+
+                    const to =
+                        new Date(
+                            toDate +
+                            "T23:59:59"
+                        );
+
+                    if (
+                        transactionDate >
+                        to
+                    ) {
+
+                        return false;
+
+                    }
+
+                }
+
+                return true;
+
+            }
+        );
+
+    displayTransactions(
+        filtered
+    );
+
+}
+
+/* =====================================================
+   CLEAR FILTERS
+===================================================== */
+
+function clearFilters() {
+
+    document
+        .getElementById("filterUser")
+        .value =
+        "ALL";
+
+    document
+        .getElementById("filterType")
+        .value =
+        "ALL";
+
+    document
+        .getElementById("filterFrom")
+        .value =
+        "";
+
+    document
+        .getElementById("filterTo")
+        .value =
+        "";
+
+    applyFilters();
+
+}
+
+/* =====================================================
+   DISPLAY MAIN TRANSACTIONS
+===================================================== */
+
+function displayTransactions(
+    transactions
+) {
+
+    displayTransactionsInElement(
+        transactions,
+        "history"
+    );
+
+}
+
+/* =====================================================
+   DISPLAY TRANSACTIONS IN ANY CONTAINER
+===================================================== */
+
+function displayTransactionsInElement(
+    transactions,
+    elementId
+) {
+
+    const history =
+        document.getElementById(
+            elementId
+        );
+
+    if (
+        !transactions ||
+        transactions.length === 0
+    ) {
+
+        history.innerHTML =
+            '<div class="empty">' +
+            'No transactions found.' +
+            '</div>';
+
+        return;
+
+    }
+
+    history.innerHTML =
+        "";
+
+    /*
+       Newest first.
+    */
+
+    const sorted =
+        [...transactions].sort(
+            (a, b) => {
+
+                return (
+                    new Date(b.date) -
+                    new Date(a.date)
+                );
+
+            }
+        );
+
+    sorted.forEach(
+        transaction => {
+
+            const isAdd =
+                transaction.type === "ADD";
+
+            const icon =
+                isAdd
+                    ? "+"
+                    : "−";
+
+            const sign =
+                isAdd
+                    ? "+"
+                    : "−";
+
+            const date =
+                formatDate(
+                    transaction.date
+                );
+
+            const where =
+                transaction.where ||
+                "No category";
+
+            let subText =
+                escapeHTML(
+                    transaction.user
+                ) +
+                " • " +
+                escapeHTML(where) +
+                " • " +
+                escapeHTML(date);
+
+            if (
+                transaction.reason
+            ) {
+
+                subText +=
+                    " • " +
+                    escapeHTML(
+                        transaction.reason
+                    );
+
+            }
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+            div.className =
+                "transaction";
+
+            let undoHTML = "";
+
+            if (
+                transaction.canUndo
+            ) {
+
+                undoHTML = `
+
+                    <div>
+
+                        <button
+                            class="undo-button"
+                            onclick="undoTransaction('${escapeAttribute(transaction.id)}')">
+
+                            ↩ Undo
+
+                        </button>
+
+                        <div
+                            class="undo-time"
+                            data-date="${escapeAttribute(transaction.date)}">
+
+                            <span class="undo-countdown">
+                                30:00
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+
+            div.innerHTML = `
+
+                <div class="
+                    transaction-icon
+                    ${isAdd ? "add" : "remove"}
+                ">
+
+                    ${icon}
+
+                </div>
+
+                <div class="transaction-info">
+
+                    <div class="transaction-main">
+
+                        ${escapeHTML(where)}
+
+                    </div>
+
+                    <div class="transaction-sub">
+
+                        ${subText}
+
+                    </div>
+
+                </div>
+
+                <div class="
+                    transaction-amount
+                    ${isAdd ? "add" : "remove"}
+                ">
+
+                    ${sign}${formatMoney(
+                        transaction.amount
+                    )}
+
+                </div>
+
+                ${undoHTML}
+
+            `;
+
+            history.appendChild(div);
+
+        }
+    );
+
+    updateUndoCountdowns();
+
+}
+
+/* =====================================================
+   UNDO
+===================================================== */
+
+async function undoTransaction(
+    transactionId
+) {
+
+    const transaction =
+        allTransactions.find(
+            item =>
+                String(item.id) ===
+                String(transactionId)
+        );
+
+    if (!transaction) {
+
+        alert(
+            "Transaction not found."
+        );
+
+        return;
+
+    }
+
+    if (!transaction.canUndo) {
+
+        alert(
+            "This transaction can no longer be undone."
+        );
+
+        return;
+
+    }
+
+    const confirmed =
+        confirm(
+            "Undo this transaction?\n\n" +
+            formatMoney(
+                transaction.amount
+            ) +
+            " — " +
+            transaction.type +
+            "\n" +
+            transaction.where +
+            (
+                transaction.reason
+                    ? "\n" +
+                      transaction.reason
+                    : ""
+            )
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    setStatus(
+        "Undoing transaction..."
+    );
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL,
+                {
+                    method: "POST",
+
+                    body:
+                        JSON.stringify({
+
+                            action:
+                                "undoTransaction",
+
+                            id:
+                                transaction.id,
+
+                            user:
+                                currentUser
+
+                        })
+
+                }
+            );
+
+        const result =
+            await response.json();
+
+        if (!result.success) {
+
+            throw new Error(
+                result.error ||
+                "Could not undo transaction."
+            );
+
+        }
+
+        await loadData();
+
+        setStatus(
+            "Transaction undone ✓"
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Could not undo transaction.\n\n" +
+            error.message
+        );
+
+        setStatus(
+            "Undo failed"
+        );
+
+    }
+
+}
+
+/* =====================================================
+   UNDO COUNTDOWN
+===================================================== */
+
+function updateUndoCountdowns() {
+
+    const elements =
+        document.querySelectorAll(
+            ".undo-time"
+        );
+
+    elements.forEach(
+        element => {
+
+            const dateString =
+                element.getAttribute(
+                    "data-date"
+                );
+
+            const date =
+                new Date(
+                    dateString
+                );
+
+            const now =
+                new Date();
+
+            const remaining =
+                (
+                    30 * 60 * 1000
+                ) -
+                (
+                    now.getTime() -
+                    date.getTime()
+                );
+
+            const countdown =
+                element.querySelector(
+                    ".undo-countdown"
+                );
+
+            if (
+                remaining <= 0
+            ) {
+
+                const transactionElement =
+                    element.closest(
+                        ".transaction"
+                    );
+
+                if (
+                    transactionElement
+                ) {
+
+                    const button =
+                        transactionElement.querySelector(
+                            ".undo-button"
+                        );
+
+                    if (button) {
+                        button.remove();
+                    }
+
+                }
+
+                element.innerHTML =
+                    "";
+
+                return;
+
+            }
+
+            const totalSeconds =
+                Math.floor(
+                    remaining / 1000
+                );
+
+            const minutes =
+                Math.floor(
+                    totalSeconds / 60
+                );
+
+            const seconds =
+                totalSeconds % 60;
+
+            if (countdown) {
+
+                countdown.textContent =
+                    String(minutes)
+                        .padStart(2, "0") +
+                    ":" +
+                    String(seconds)
+                        .padStart(2, "0");
+
+            }
+
+        }
+    );
+
+}
+
+/* =====================================================
+   FORMAT MONEY
+===================================================== */
+
+function formatMoney(amount) {
+
+    return Number(
+        amount || 0
+    ).toLocaleString(
+        "en-US",
+        {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }
+    ) + " DA";
+
+}
+
+/* =====================================================
+   FORMAT DATE
+===================================================== */
+
+function formatDate(date) {
+
+    const d =
+        new Date(date);
+
+    if (
+        isNaN(
+            d.getTime()
+        )
+    ) {
+
+        return String(date);
+
+    }
+
+    return d.toLocaleString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+
+}
+
+/* =====================================================
+   HTML ESCAPE
+===================================================== */
+
+function escapeHTML(text) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.textContent =
+        text == null
+            ? ""
+            : String(text);
+
+    return div.innerHTML;
+
+}
+
+/* =====================================================
+   ATTRIBUTE ESCAPE
+===================================================== */
+
+function escapeAttribute(text) {
+
+    return String(
+        text == null
+            ? ""
+            : text
+    )
+    .replace(
+        /\\/g,
+        "\\\\"
+    )
+    .replace(
+        /'/g,
+        "\\'"
+    )
+    .replace(
+        /"/g,
+        "&quot;"
+    );
+
+}
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+function setStatus(message) {
+
+    document
+        .getElementById("status")
+        .textContent =
+        message;
+
+}
+
+/* =====================================================
+   AUTO REFRESH
+===================================================== */
+
+setInterval(
+    () => {
+
+        if (currentUser) {
+
+            loadData();
+
+        }
+
+    },
+    15000
+);
+
+/* =====================================================
+   UNDO TIMER
+===================================================== */
+
+setInterval(
+    () => {
+
+        if (currentUser) {
+
+            updateUndoCountdowns();
+
+        }
+
+    },
+    1000
+);
+
+</script>
+
+</body>
+</html>
+```
