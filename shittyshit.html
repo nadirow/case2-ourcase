@@ -35,9 +35,23 @@
 .product-form-card label{display:block;font-weight:700;margin-bottom:6px;font-size:13px}
 .variant-row{display:grid;grid-template-columns:1.1fr 1.1fr 1.2fr .8fr 1fr 1fr auto;gap:7px;margin-bottom:8px;align-items:center}
 .variant-row input{min-width:0}.remove-variant{border:0;background:#fee2e2;color:#b91c1c;border-radius:9px;padding:9px;cursor:pointer}
-.scanner-box{display:none;background:#111827;color:white;border-radius:18px;padding:15px;margin-bottom:18px}
-#reader{width:100%;max-width:600px;margin:0 auto;background:white;border-radius:12px;overflow:hidden}
-.scanner-close{margin-top:10px}
+.scanner-box{display:none;background:#0b1220;color:white;border-radius:20px;padding:16px;margin-bottom:18px;box-shadow:0 12px 35px rgba(0,0,0,.18)}
+.scanner-title{font-size:18px;font-weight:800;margin-bottom:5px}.scanner-subtitle{font-size:12px;color:#cbd5e1;margin-bottom:14px}
+.scanner-camera{position:relative;width:100%;max-width:720px;aspect-ratio:4/3;margin:0 auto;background:#020617;border-radius:16px;overflow:hidden}
+#scannerVideo{width:100%;height:100%;display:block;object-fit:cover;background:#020617}
+.scanner-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scanner-target{width:min(76%,360px);aspect-ratio:1.65;border:3px solid rgba(255,255,255,.95);border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.28)}
+.scanner-target:before,.scanner-target:after{content:"";position:absolute;width:34px;height:34px;border-color:#fff;border-style:solid}
+.scanner-target:before{border-width:4px 0 0 4px;border-radius:10px 0 0 0;margin:-3px}
+.scanner-target:after{border-width:0 4px 4px 0;border-radius:0 0 10px 0;margin:3px}
+.scanner-line{position:absolute;width:min(68%,330px);height:2px;background:#fff;box-shadow:0 0 10px rgba(255,255,255,.8);animation:scannerLine 1.8s ease-in-out infinite}
+@keyframes scannerLine{0%,100%{transform:translateY(-52px);opacity:.35}50%{transform:translateY(52px);opacity:1}}
+.scanner-status{max-width:720px;margin:10px auto 0;background:#172033;border-radius:10px;padding:9px 12px;font-size:12px;text-align:center;color:#e5e7eb}
+.scanner-controls{display:flex;gap:8px;flex-wrap:wrap;max-width:720px;margin:10px auto 0}.scanner-controls button{flex:1;min-width:120px}
+.scanner-manual{display:flex;gap:8px;max-width:720px;margin:10px auto 0}.scanner-manual input{flex:1;min-width:0;padding:12px;border:1px solid #475569;border-radius:10px;background:#111827;color:white}.scanner-manual button{white-space:nowrap}
+.scanner-success{display:none;max-width:720px;margin:10px auto 0;background:#064e3b;border:1px solid #10b981;border-radius:12px;padding:12px;text-align:center;font-weight:800}
+#reader{display:none;width:100%;max-width:720px;margin:10px auto 0;background:white;border-radius:12px;overflow:hidden}.scanner-close{margin-top:10px}
+@media(max-width:600px){.scanner-controls button{min-width:calc(50% - 4px)}.scanner-manual{flex-direction:column}.scanner-manual button{width:100%}}
 .product-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;padding:20px;overflow:auto}
 .product-modal{max-width:700px;margin:40px auto;background:white;border-radius:20px;padding:22px}
 .product-detail-code{background:#f3f4f6;border-radius:10px;padding:10px;margin-top:8px;word-break:break-all;font-family:monospace;font-size:13px}
@@ -866,16 +880,33 @@
     </div>
 
     <div id="productScanner" class="scanner-box">
-        <div style="font-weight:800;margin-bottom:10px;">
-            Scan a barcode or QR code
+        <div class="scanner-title">Scan a barcode or QR code</div>
+        <div class="scanner-subtitle">Point the rear camera at the code. The scanner supports QR and common 1D product barcodes.</div>
+
+        <div id="nativeScanner" class="scanner-camera">
+            <video id="scannerVideo" playsinline muted></video>
+            <div class="scanner-overlay">
+                <div class="scanner-target"></div>
+                <div class="scanner-line"></div>
+            </div>
+        </div>
+
+        <div id="scannerSuccess" class="scanner-success"></div>
+        <div id="scannerStatus" class="scanner-status">Starting camera...</div>
+
+        <div class="scanner-controls">
+            <button type="button" class="product-action-button secondary" onclick="switchScannerCamera()">🔄 Switch Camera</button>
+            <button type="button" class="product-action-button secondary" id="flashButton" onclick="toggleScannerFlash()">🔦 Flash</button>
+            <button type="button" class="product-action-button secondary" onclick="startProductScanner()">▶ Restart</button>
+            <button type="button" class="product-action-button secondary" onclick="stopProductScanner()">✕ Close</button>
+        </div>
+
+        <div class="scanner-manual">
+            <input id="manualScannerCode" type="text" autocomplete="off" placeholder="Enter barcode / QR value manually">
+            <button type="button" class="product-action-button" onclick="submitManualScannerCode()">Use Code</button>
         </div>
 
         <div id="reader"></div>
-
-        <button class="product-action-button scanner-close"
-                onclick="stopProductScanner()">
-            Close scanner
-        </button>
     </div>
 
     <div id="productForm" class="product-form-card">
@@ -3688,55 +3719,382 @@ async function deleteProduct(productId) {
     }
 }
 
-async function startProductScanner() {
-    document.getElementById("productScanner").style.display="block";
+let productScanner = null;
+let nativeScannerStream = null;
+let nativeScannerDetector = null;
+let scannerRunning = false;
+let scannerCameraIndex = 0;
+let scannerCameras = [];
+let scannerFlashOn = false;
+let scannerProcessing = false;
+let scannerLastCode = "";
+let scannerLastCodeTime = 0;
 
-    if(!window.Html5Qrcode) {
-        alert("Scanner library could not be loaded. Check your internet connection.");
+function setScannerStatus(message) {
+    const el=document.getElementById("scannerStatus");
+    if(el) el.textContent=message;
+}
+
+function showScannerSuccess(message) {
+    const el=document.getElementById("scannerSuccess");
+    if(!el) return;
+    el.textContent=message;
+    el.style.display="block";
+}
+
+function hideScannerSuccess() {
+    const el=document.getElementById("scannerSuccess");
+    if(el) el.style.display="none";
+}
+
+function getBarcodeFormats() {
+    const formats=[];
+    const F=window.BarcodeDetector?.getSupportedFormats;
+    return F;
+}
+
+async function startProductScanner() {
+    const scanner=document.getElementById("productScanner");
+    if(!scanner) return;
+
+    scanner.style.display="block";
+    hideScannerSuccess();
+    scannerProcessing=false;
+    scannerLastCode="";
+    scannerLastCodeTime=0;
+    setScannerStatus("Starting camera...");
+
+    await stopProductScanner(true);
+
+    scanner.style.display="block";
+
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setScannerStatus("Camera access is not supported by this browser.");
+        await startHtml5Scanner();
         return;
     }
 
-    if(productScanner) return;
-
-    productScanner=new Html5Qrcode("reader");
-
     try {
-        await productScanner.start(
-            {facingMode:"environment"},
-            {fps:10,qrbox:{width:250,height:180}},
-            code=>handleScannedProductCode(code),
-            ()=>{}
-        );
+        await startNativeScanner();
     } catch(error) {
-        console.error(error);
-        productScanner=null;
-        alert(
-            "Could not start the camera.\n\n"+
-            "Allow camera permission and make sure the page uses HTTPS."
-        );
+        console.warn("Native barcode scanner unavailable:",error);
+        setScannerStatus("Using compatibility scanner...");
+        try {
+            await startHtml5Scanner();
+        } catch(fallbackError) {
+            console.error(fallbackError);
+            setScannerStatus("Could not start scanner. Allow camera permission and use HTTPS.");
+            alert("Could not start the camera.
+
+Allow camera permission and make sure the page uses HTTPS.");
+        }
     }
 }
 
-async function stopProductScanner() {
+async function getPreferredCameraList() {
+    try {
+        let devices=await navigator.mediaDevices.enumerateDevices();
+        let cameras=devices.filter(d=>d.kind==="videoinput");
+
+        if(!cameras.length) {
+            const temp=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+            temp.getTracks().forEach(t=>t.stop());
+            devices=await navigator.mediaDevices.enumerateDevices();
+            cameras=devices.filter(d=>d.kind==="videoinput");
+        }
+
+        return cameras;
+    } catch(error) {
+        console.warn("Could not enumerate cameras:",error);
+        return [];
+    }
+}
+
+async function startNativeScanner() {
+    const video=document.getElementById("scannerVideo");
+    const nativeBox=document.getElementById("nativeScanner");
+    const reader=document.getElementById("reader");
+
+    if(!video || !nativeBox) throw new Error("Scanner video element is missing.");
+    if(!window.BarcodeDetector) throw new Error("BarcodeDetector is not supported.");
+
+    let supported=[];
+    try {
+        supported=await BarcodeDetector.getSupportedFormats();
+    } catch(error) {
+        supported=[];
+    }
+
+    const wanted=[
+        "qr_code","ean_13","ean_8","upc_a","upc_e",
+        "code_128","code_39","code_93","codabar","itf_14"
+    ];
+    const formats=wanted.filter(x=>supported.includes(x));
+
+    nativeScannerDetector=formats.length
+        ? new BarcodeDetector({formats})
+        : new BarcodeDetector();
+
+    scannerCameras=await getPreferredCameraList();
+
+    if(scannerCameras.length) {
+        let rearIndex=scannerCameras.findIndex(camera=>/back|rear|environment/i.test(camera.label||""));
+        if(rearIndex>=0) scannerCameraIndex=rearIndex;
+        else scannerCameraIndex=Math.min(scannerCameraIndex,scannerCameras.length-1);
+    }
+
+    const camera=scannerCameras[scannerCameraIndex];
+    const constraints=camera?.deviceId
+        ? {video:{deviceId:{exact:camera.deviceId},width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:30,max:60}},audio:false}
+        : {video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:30,max:60}},audio:false};
+
+    nativeScannerStream=await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject=nativeScannerStream;
+    video.setAttribute("playsinline","");
+    video.muted=true;
+    await video.play();
+
+    nativeBox.style.display="block";
+    if(reader) reader.style.display="none";
+    scannerRunning=true;
+    scannerFlashOn=false;
+    setupScannerFlash();
+    setScannerStatus("Scanning... keep the code inside the box.");
+    requestAnimationFrame(scanNativeFrame);
+}
+
+async function scanNativeFrame() {
+    if(!scannerRunning || !nativeScannerDetector) return;
+
+    const video=document.getElementById("scannerVideo");
+    if(!video || video.readyState<2) {
+        requestAnimationFrame(scanNativeFrame);
+        return;
+    }
+
+    if(!scannerProcessing) {
+        scannerProcessing=true;
+        try {
+            const results=await nativeScannerDetector.detect(video);
+            if(results && results.length) {
+                const value=results[0]?.rawValue||"";
+                if(value) processScannerResult(value);
+            }
+        } catch(error) {
+            // Some browsers throw while a frame is changing. Keep scanning.
+        } finally {
+            scannerProcessing=false;
+        }
+    }
+
+    if(scannerRunning) requestAnimationFrame(scanNativeFrame);
+}
+
+async function startHtml5Scanner() {
+    if(!window.Html5Qrcode) throw new Error("Compatibility scanner library could not be loaded.");
+
+    await stopNativeCameraOnly();
+
+    const nativeBox=document.getElementById("nativeScanner");
+    const reader=document.getElementById("reader");
+    if(nativeBox) nativeBox.style.display="none";
+    if(reader) reader.style.display="block";
+
+    let formats=[];
+    const F=window.Html5QrcodeSupportedFormats||{};
+    ["QR_CODE","EAN_13","EAN_8","UPC_A","UPC_E","CODE_128","CODE_39","CODE_93","CODABAR","ITF_14","ITF"].forEach(name=>{
+        if(F[name]!==undefined) formats.push(F[name]);
+    });
+
+    productScanner=new Html5Qrcode("reader",{
+        verbose:false,
+        formatsToSupport:formats.length?formats:undefined
+    });
+
+    scannerRunning=true;
+    scannerFlashOn=false;
+
+    const config={
+        fps:20,
+        qrbox:(viewfinderWidth,viewfinderHeight)=>{
+            const width=Math.floor(Math.min(viewfinderWidth*0.78,420));
+            const height=Math.floor(Math.min(viewfinderHeight*0.48,230));
+            return {width:Math.max(220,width),height:Math.max(120,height)};
+        },
+        aspectRatio:1.333333,
+        disableFlip:false
+    };
+
+    await productScanner.start(
+        scannerCameras[scannerCameraIndex]?.id
+            ? scannerCameras[scannerCameraIndex].id
+            : {facingMode:"environment"},
+        config,
+        decodedText=>processScannerResult(decodedText),
+        ()=>{}
+    );
+
+    setScannerStatus("Compatibility scanner active. Keep the code inside the box.");
+    setupScannerFlash();
+}
+
+async function processScannerResult(code) {
+    const scanned=String(code||"").trim();
+    if(!scanned || !scannerRunning) return;
+
+    const now=Date.now();
+    if(scannerLastCode===scanned && now-scannerLastCodeTime<2500) return;
+    scannerLastCode=scanned;
+    scannerLastCodeTime=now;
+    scannerRunning=false;
+
+    playScannerBeep();
+    showScannerSuccess("✓ Code detected: "+scanned);
+    setScannerStatus("Code detected. Opening product...");
+
+    await stopProductScanner(true);
+    handleScannedProductCode(scanned);
+}
+
+function playScannerBeep() {
+    try {
+        const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+        if(!AudioContextClass) return;
+        const ctx=new AudioContextClass();
+        const oscillator=ctx.createOscillator();
+        const gain=ctx.createGain();
+        oscillator.type="sine";
+        oscillator.frequency.value=880;
+        gain.gain.value=0.06;
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime+0.09);
+    } catch(error) {}
+}
+
+async function stopNativeCameraOnly() {
+    scannerRunning=false;
+
+    if(nativeScannerStream) {
+        nativeScannerStream.getTracks().forEach(track=>track.stop());
+        nativeScannerStream=null;
+    }
+
+    const video=document.getElementById("scannerVideo");
+    if(video) {
+        try { video.pause(); } catch(error) {}
+        video.srcObject=null;
+    }
+}
+
+async function stopProductScanner(keepVisible=false) {
+    scannerRunning=false;
+    scannerProcessing=false;
+
+    await stopNativeCameraOnly();
+
     if(productScanner) {
         try {
-            await productScanner.stop();
-            productScanner.clear();
+            const state=typeof productScanner.getState==="function"
+                ?productScanner.getState()
+                :null;
+            if(state!==null && window.Html5QrcodeScannerState && state===Html5QrcodeScannerState.SCANNING) {
+                await productScanner.stop();
+            } else {
+                try { await productScanner.stop(); } catch(error) {}
+            }
         } catch(error) {
-            console.error(error);
+            console.warn("Could not stop compatibility scanner:",error);
         }
+        try { productScanner.clear(); } catch(error) {}
         productScanner=null;
     }
 
     const scanner=document.getElementById("productScanner");
-    if(scanner) scanner.style.display="none";
+    const nativeBox=document.getElementById("nativeScanner");
+    const reader=document.getElementById("reader");
+
+    if(nativeBox) nativeBox.style.display="block";
+    if(reader) reader.style.display="none";
+
+    if(!keepVisible && scanner) {
+        scanner.style.display="none";
+        hideScannerSuccess();
+    }
+
+    scannerFlashOn=false;
+    setupScannerFlash();
+}
+
+async function switchScannerCamera() {
+    if(!document.getElementById("productScanner")) return;
+
+    if(!scannerCameras.length) {
+        scannerCameras=await getPreferredCameraList();
+    }
+
+    if(scannerCameras.length<2) {
+        setScannerStatus("Only one camera is available on this device.");
+        return;
+    }
+
+    scannerCameraIndex=(scannerCameraIndex+1)%scannerCameras.length;
+    setScannerStatus("Switching camera...");
+
+    await stopProductScanner(true);
+    try {
+        await startNativeScanner();
+    } catch(error) {
+        try {
+            await startHtml5Scanner();
+        } catch(fallbackError) {
+            console.error(error,fallbackError);
+            setScannerStatus("Could not switch camera.");
+        }
+    }
+}
+
+function setupScannerFlash() {
+    const button=document.getElementById("flashButton");
+    const track=nativeScannerStream?.getVideoTracks?.()[0];
+    const capabilities=track?.getCapabilities?.()||{};
+
+    if(button) {
+        button.disabled=!capabilities.torch;
+        button.textContent=capabilities.torch
+            ?(scannerFlashOn?"🔦 Flash On":"🔦 Flash")
+            :"🔦 No Flash";
+    }
+}
+
+async function toggleScannerFlash() {
+    const track=nativeScannerStream?.getVideoTracks?.()[0];
+    if(!track) return setScannerStatus("Flash is not available in this scanner mode.");
+
+    const capabilities=track.getCapabilities?.()||{};
+    if(!capabilities.torch) return setScannerStatus("This camera does not expose a flashlight control.");
+
+    scannerFlashOn=!scannerFlashOn;
+    try {
+        await track.applyConstraints({advanced:[{torch:scannerFlashOn}]});
+        setupScannerFlash();
+    } catch(error) {
+        scannerFlashOn=!scannerFlashOn;
+        setScannerStatus("Could not change the flash setting.");
+    }
+}
+
+function submitManualScannerCode() {
+    const input=document.getElementById("manualScannerCode");
+    const value=input?.value.trim();
+    if(!value) return alert("Enter a barcode or QR value first.");
+    processScannerResult(value);
 }
 
 function handleScannedProductCode(code) {
     const scanned=String(code||"").trim();
     if(!scanned) return;
-
-    stopProductScanner();
 
     const product=allProducts.find(item=>
         String(item.barcode||"").trim()===scanned ||
@@ -3750,12 +4108,20 @@ function handleScannedProductCode(code) {
 
     openProductForm();
     document.getElementById("productBarcode").value=scanned;
+    document.getElementById("productQRCode").value="";
 
     alert(
         "This code is not registered yet.\n\n"+
         "The scanned value was placed in the Barcode field."
     );
 }
+
+document.addEventListener("keydown",event=>{
+    if(event.key==="Enter" && document.activeElement?.id==="manualScannerCode") {
+        event.preventDefault();
+        submitManualScannerCode();
+    }
+});
 
 /* =====================================================
    PRODUCTS AUTO REFRESH
