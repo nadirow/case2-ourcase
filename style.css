@@ -1,0 +1,835 @@
+a
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f5f7;
+    color: #111827;
+    min-height: 100vh;
+}
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+#loginPage {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.login-box {
+    width: 100%;
+    max-width: 420px;
+    background: white;
+    padding: 40px;
+    border-radius: 24px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.08);
+    text-align: center;
+}
+
+.login-box h1 {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.login-box p {
+    color: #6b7280;
+    margin-bottom: 30px;
+}
+
+.user-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.user-button {
+    flex: 1;
+    border: none;
+    padding: 22px;
+    border-radius: 16px;
+    background: #111827;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.user-button:hover {
+    transform: translateY(-3px);
+    background: #000;
+}
+
+/* =====================================================
+   APP
+===================================================== */
+
+#appPage {
+    display: none;
+    max-width: 950px;
+    margin: auto;
+    padding: 25px 18px 50px;
+}
+
+/* =====================================================
+   VIEWS
+===================================================== */
+
+#trackerView,
+#debtView,
+#debtPersonView,
+#privateUserView {
+    display: none;
+}
+
+#trackerView {
+    display: block;
+}
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.header h1 {
+    font-size: 26px;
+}
+
+.user-badge {
+    background: white;
+    padding: 10px 16px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    font-weight: bold;
+}
+
+/* =====================================================
+   USER PRIVATE SUMMARY
+===================================================== */
+
+.user-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.profile-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.profile-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.09);
+}
+
+.profile-card:active {
+    transform: scale(0.99);
+}
+
+.profile-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.profile-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #111827;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.profile-name {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.profile-label {
+    color: #9ca3af;
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.profile-stat {
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 12px;
+}
+
+.profile-stat-label {
+    color: #6b7280;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.profile-stat-value {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.profile-stat-value.spent {
+    color: #dc2626;
+}
+
+.profile-stat-value.added {
+    color: #16a34a;
+}
+
+/* =====================================================
+   BALANCE
+===================================================== */
+
+.balance-card {
+    background: #111827;
+    color: white;
+    border-radius: 25px;
+    padding: 35px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: 0.2s;
+    position: relative;
+}
+
+.balance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.balance-card:active {
+    transform: scale(0.99);
+}
+
+.balance-label {
+    color: #9ca3af;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.balance {
+    font-size: 48px;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.balance-hint {
+    margin-top: 10px;
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+/* =====================================================
+   ACTIONS
+===================================================== */
+
+.actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.action-button {
+    border: none;
+    border-radius: 18px;
+    padding: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+}
+
+.add-button {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.remove-button {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* =====================================================
+   FORM
+===================================================== */
+
+.form-card {
+    display: none;
+    background: white;
+    padding: 25px;
+    border-radius: 22px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+.form-card h2 {
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 7px;
+    font-weight: bold;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    padding: 13px;
+    border-radius: 12px;
+    font-size: 16px;
+    outline: none;
+    font-family: inherit;
+    background: white;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: #111827;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.submit-button,
+.cancel-button {
+    border: none;
+    padding: 14px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.submit-button {
+    background: #111827;
+    color: white;
+    flex: 1;
+}
+
+.cancel-button {
+    background: #e5e7eb;
+}
+
+/* =====================================================
+   FILTERS
+===================================================== */
+
+.filters-card {
+    background: white;
+    padding: 20px;
+    border-radius: 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+.filters-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.filters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.filter-group label {
+    display: block;
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.clear-filters {
+    border: none;
+    background: #f3f4f6;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+}
+
+/* =====================================================
+   HISTORY
+===================================================== */
+
+.history-card {
+    background: white;
+    border-radius: 22px;
+    padding: 25px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+.history-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.history-title h2 {
+    font-size: 21px;
+}
+
+.refresh-button {
+    border: none;
+    background: #f3f4f6;
+    padding: 9px 13px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.refresh-button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+/* =====================================================
+   TRANSACTION
+===================================================== */
+
+.transaction {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 16px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.transaction:last-child {
+    border-bottom: none;
+}
+
+.transaction-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.transaction-icon.add {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.transaction-icon.remove {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.transaction-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.transaction-main {
+    font-weight: bold;
+    word-break: break-word;
+}
+
+.transaction-sub {
+    color: #6b7280;
+    font-size: 13px;
+    margin-top: 4px;
+    word-break: break-word;
+}
+
+.transaction-amount {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.transaction-amount.add {
+    color: #16a34a;
+}
+
+.transaction-amount.remove {
+    color: #dc2626;
+}
+
+/* =====================================================
+   UNDO
+===================================================== */
+
+.undo-button {
+    border: none;
+    background: #f3f4f6;
+    color: #374151;
+    padding: 8px 11px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.undo-button:hover {
+    background: #e5e7eb;
+}
+
+.undo-time {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 4px;
+    text-align: right;
+}
+
+/* =====================================================
+   SHARED DETAIL PAGE
+===================================================== */
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.back-button {
+    border: none;
+    background: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 13px;
+    font-size: 22px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+
+.back-button:hover {
+    background: #f9fafb;
+}
+
+.detail-header-text h1 {
+    font-size: 27px;
+}
+
+.detail-header-text p {
+    color: #6b7280;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+/* =====================================================
+   DEBT PAGE
+===================================================== */
+
+.debt-total-card {
+    background: #111827;
+    color: white;
+    border-radius: 25px;
+    padding: 30px;
+    margin-bottom: 20px;
+}
+
+.debt-total-label {
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 13px;
+}
+
+.debt-total {
+    font-size: 38px;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.debt-person {
+    background: white;
+    border-radius: 22px;
+    padding: 22px;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.debt-person:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.09);
+}
+
+.debt-person:active {
+    transform: scale(0.99);
+}
+
+.debt-person-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.debt-person-icon {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    border-radius: 50%;
+    background: #111827;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 19px;
+}
+
+.debt-person-name {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.debt-person-status {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.debt-amount {
+    margin-left: auto;
+    text-align: right;
+}
+
+.debt-amount-number {
+    font-size: 21px;
+    font-weight: bold;
+}
+
+.debt-amount-number.receive {
+    color: #16a34a;
+}
+
+.debt-amount-number.give {
+    color: #dc2626;
+}
+
+.debt-amount-number.settled {
+    color: #6b7280;
+}
+
+.debt-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.debt-stat {
+    background: #f9fafb;
+    padding: 13px;
+    border-radius: 12px;
+}
+
+.debt-stat-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 5px;
+}
+
+.debt-stat-value {
+    font-weight: bold;
+}
+
+.debt-stat-value.added {
+    color: #16a34a;
+}
+
+.debt-stat-value.removed {
+    color: #dc2626;
+}
+
+.debt-empty {
+    background: white;
+    padding: 40px 20px;
+    border-radius: 22px;
+    text-align: center;
+    color: #9ca3af;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+/* =====================================================
+   DETAIL SUMMARY
+===================================================== */
+
+.detail-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.detail-stat-card {
+    background: white;
+    padding: 18px;
+    border-radius: 18px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+}
+
+.detail-stat-label {
+    color: #6b7280;
+    font-size: 12px;
+    margin-bottom: 7px;
+}
+
+.detail-stat-value {
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.detail-stat-value.green {
+    color: #16a34a;
+}
+
+.detail-stat-value.red {
+    color: #dc2626;
+}
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+.status {
+    text-align: center;
+    font-size: 13px;
+    color: #9ca3af;
+    margin-top: 12px;
+}
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+.logout {
+    display: block;
+    margin: 20px auto 0;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+    .filters {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .user-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-summary {
+        grid-template-columns: 1fr 1fr;
+    }
+
+}
+
+@media (max-width: 600px) {
+
+    .actions {
+        grid-template-columns: 1fr;
+    }
+
+    .balance {
+        font-size: 38px;
+    }
+
+    .balance-card {
+        padding: 28px;
+    }
+
+    .login-box {
+        padding: 30px 20px;
+    }
+
+    .transaction {
+        gap: 9px;
+        align-items: flex-start;
+    }
+
+    .transaction-amount {
+        font-size: 14px;
+    }
+
+    .debt-person-top {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .debt-amount {
+        margin-left: 0;
+        width: 100%;
+        text-align: left;
+    }
+
+    .detail-summary {
+        grid-template-columns: 1fr;
+    }
+
+}
