@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,850 +6,73 @@
 
 <title>Money Tracker</title>
 
+<link rel="stylesheet" href="style.css">
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
 <style>
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f4f5f7;
-    color: #111827;
-    min-height: 100vh;
-}
-
-/* =====================================================
-   LOGIN
-===================================================== */
-
-#loginPage {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
-
-.login-box {
-    width: 100%;
-    max-width: 420px;
-    background: white;
-    padding: 40px;
-    border-radius: 24px;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.08);
-    text-align: center;
-}
-
-.login-box h1 {
-    font-size: 32px;
-    margin-bottom: 10px;
-}
-
-.login-box p {
-    color: #6b7280;
-    margin-bottom: 30px;
-}
-
-.user-buttons {
-    display: flex;
-    gap: 15px;
-}
-
-.user-button {
-    flex: 1;
-    border: none;
-    padding: 22px;
-    border-radius: 16px;
-    background: #111827;
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.user-button:hover {
-    transform: translateY(-3px);
-    background: #000;
-}
-
-/* =====================================================
-   APP
-===================================================== */
-
-#appPage {
-    display: none;
-    max-width: 950px;
-    margin: auto;
-    padding: 25px 18px 50px;
-}
-
-/* =====================================================
-   VIEWS
-===================================================== */
-
-#trackerView,
-#debtView,
-#debtPersonView,
-#privateUserView {
-    display: none;
-}
-
-#trackerView {
-    display: block;
-}
-
-/* =====================================================
-   HEADER
-===================================================== */
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-}
-
-.header h1 {
-    font-size: 26px;
-}
-
-.user-badge {
-    background: white;
-    padding: 10px 16px;
-    border-radius: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-    font-weight: bold;
-}
-
-/* =====================================================
-   USER PRIVATE SUMMARY
-===================================================== */
-
-.user-summary {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.profile-card {
-    background: white;
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.profile-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.09);
-}
-
-.profile-card:active {
-    transform: scale(0.99);
-}
-
-.profile-top {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 18px;
-}
-
-.profile-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #111827;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.profile-name {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.profile-label {
-    color: #9ca3af;
-    font-size: 12px;
-    margin-top: 3px;
-}
-
-.profile-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-.profile-stat {
-    background: #f9fafb;
-    padding: 12px;
-    border-radius: 12px;
-}
-
-.profile-stat-label {
-    color: #6b7280;
-    font-size: 12px;
-    margin-bottom: 5px;
-}
-
-.profile-stat-value {
-    font-weight: bold;
-    font-size: 16px;
-}
-
-.profile-stat-value.spent {
-    color: #dc2626;
-}
-
-.profile-stat-value.added {
-    color: #16a34a;
-}
-
-/* =====================================================
-   BALANCE
-===================================================== */
-
-.balance-card {
-    background: #111827;
-    color: white;
-    border-radius: 25px;
-    padding: 35px;
-    margin-bottom: 20px;
-    cursor: pointer;
-    transition: 0.2s;
-    position: relative;
-}
-
-.balance-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-}
-
-.balance-card:active {
-    transform: scale(0.99);
-}
-
-.balance-label {
-    color: #9ca3af;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.balance {
-    font-size: 48px;
-    font-weight: bold;
-    margin-top: 8px;
-}
-
-.balance-hint {
-    margin-top: 10px;
-    color: #9ca3af;
-    font-size: 12px;
-}
-
-/* =====================================================
-   ACTIONS
-===================================================== */
-
-.actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.action-button {
-    border: none;
-    border-radius: 18px;
-    padding: 20px;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.action-button:hover {
-    transform: translateY(-2px);
-}
-
-.add-button {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.remove-button {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-/* =====================================================
-   FORM
-===================================================== */
-
-.form-card {
-    display: none;
-    background: white;
-    padding: 25px;
-    border-radius: 22px;
-    margin-bottom: 25px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-}
-
-.form-card h2 {
-    margin-bottom: 20px;
-}
-
-.form-group {
-    margin-bottom: 16px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 7px;
-    font-weight: bold;
-}
-
-input,
-textarea,
-select {
-    width: 100%;
-    border: 1px solid #d1d5db;
-    padding: 13px;
-    border-radius: 12px;
-    font-size: 16px;
-    outline: none;
-    font-family: inherit;
-    background: white;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-    border-color: #111827;
-}
-
-textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-.form-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.submit-button,
-.cancel-button {
-    border: none;
-    padding: 14px 20px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 15px;
-}
-
-.submit-button {
-    background: #111827;
-    color: white;
-    flex: 1;
-}
-
-.cancel-button {
-    background: #e5e7eb;
-}
-
-/* =====================================================
-   FILTERS
-===================================================== */
-
-.filters-card {
-    background: white;
-    padding: 20px;
-    border-radius: 22px;
-    margin-bottom: 20px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-}
-
-.filters-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 15px;
-}
-
-.filters {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-}
-
-.filter-group label {
-    display: block;
-    font-size: 12px;
-    color: #6b7280;
-    font-weight: bold;
-    margin-bottom: 6px;
-}
-
-.clear-filters {
-    border: none;
-    background: #f3f4f6;
-    padding: 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    width: 100%;
-}
-
-/* =====================================================
-   HISTORY
-===================================================== */
-
-.history-card {
-    background: white;
-    border-radius: 22px;
-    padding: 25px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-}
-
-.history-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.history-title h2 {
-    font-size: 21px;
-}
-
-.refresh-button {
-    border: none;
-    background: #f3f4f6;
-    padding: 9px 13px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 18px;
-}
-
-.refresh-button:disabled {
-    opacity: 0.5;
-    cursor: wait;
-}
-
-/* =====================================================
-   TRANSACTION
-===================================================== */
-
-.transaction {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 16px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.transaction:last-child {
-    border-bottom: none;
-}
-
-.transaction-icon {
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    font-size: 20px;
-}
-
-.transaction-icon.add {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.transaction-icon.remove {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.transaction-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.transaction-main {
-    font-weight: bold;
-    word-break: break-word;
-}
-
-.transaction-sub {
-    color: #6b7280;
-    font-size: 13px;
-    margin-top: 4px;
-    word-break: break-word;
-}
-
-.transaction-amount {
-    font-weight: bold;
-    white-space: nowrap;
-}
-
-.transaction-amount.add {
-    color: #16a34a;
-}
-
-.transaction-amount.remove {
-    color: #dc2626;
-}
-
-/* =====================================================
-   UNDO
-===================================================== */
-
-.undo-button {
-    border: none;
-    background: #f3f4f6;
-    color: #374151;
-    padding: 8px 11px;
-    border-radius: 9px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: bold;
-    white-space: nowrap;
-}
-
-.undo-button:hover {
-    background: #e5e7eb;
-}
-
-.undo-time {
-    font-size: 11px;
-    color: #9ca3af;
-    margin-top: 4px;
-    text-align: right;
-}
-
-/* =====================================================
-   SHARED DETAIL PAGE
-===================================================== */
-
-.detail-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.back-button {
-    border: none;
-    background: white;
-    width: 45px;
-    height: 45px;
-    border-radius: 13px;
-    font-size: 22px;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-}
-
-.back-button:hover {
-    background: #f9fafb;
-}
-
-.detail-header-text h1 {
-    font-size: 27px;
-}
-
-.detail-header-text p {
-    color: #6b7280;
-    font-size: 14px;
-    margin-top: 4px;
-}
-
-/* =====================================================
-   DEBT PAGE
-===================================================== */
-
-.debt-total-card {
-    background: #111827;
-    color: white;
-    border-radius: 25px;
-    padding: 30px;
-    margin-bottom: 20px;
-}
-
-.debt-total-label {
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 13px;
-}
-
-.debt-total {
-    font-size: 38px;
-    font-weight: bold;
-    margin-top: 8px;
-}
-
-.debt-person {
-    background: white;
-    border-radius: 22px;
-    padding: 22px;
-    margin-bottom: 15px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.debt-person:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.09);
-}
-
-.debt-person:active {
-    transform: scale(0.99);
-}
-
-.debt-person-top {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 18px;
-}
-
-.debt-person-icon {
-    width: 52px;
-    height: 52px;
-    min-width: 52px;
-    border-radius: 50%;
-    background: #111827;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 19px;
-}
-
-.debt-person-name {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.debt-person-status {
-    margin-top: 4px;
-    font-size: 13px;
-    color: #6b7280;
-}
-
-.debt-amount {
-    margin-left: auto;
-    text-align: right;
-}
-
-.debt-amount-number {
-    font-size: 21px;
-    font-weight: bold;
-}
-
-.debt-amount-number.receive {
-    color: #16a34a;
-}
-
-.debt-amount-number.give {
-    color: #dc2626;
-}
-
-.debt-amount-number.settled {
-    color: #6b7280;
-}
-
-.debt-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-.debt-stat {
-    background: #f9fafb;
-    padding: 13px;
-    border-radius: 12px;
-}
-
-.debt-stat-label {
-    font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 5px;
-}
-
-.debt-stat-value {
-    font-weight: bold;
-}
-
-.debt-stat-value.added {
-    color: #16a34a;
-}
-
-.debt-stat-value.removed {
-    color: #dc2626;
-}
-
-.debt-empty {
-    background: white;
-    padding: 40px 20px;
-    border-radius: 22px;
-    text-align: center;
-    color: #9ca3af;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-}
-
-/* =====================================================
-   DETAIL SUMMARY
-===================================================== */
-
-.detail-summary {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.detail-stat-card {
-    background: white;
-    padding: 18px;
-    border-radius: 18px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-}
-
-.detail-stat-label {
-    color: #6b7280;
-    font-size: 12px;
-    margin-bottom: 7px;
-}
-
-.detail-stat-value {
-    font-size: 19px;
-    font-weight: bold;
-}
-
-.detail-stat-value.green {
-    color: #16a34a;
-}
-
-.detail-stat-value.red {
-    color: #dc2626;
-}
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-.status {
-    text-align: center;
-    font-size: 13px;
-    color: #9ca3af;
-    margin-top: 12px;
-}
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-.logout {
-    display: block;
-    margin: 20px auto 0;
-    border: none;
-    background: transparent;
-    color: #6b7280;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-/* =====================================================
-   MOBILE
-===================================================== */
-
-@media (max-width: 700px) {
-
-    .filters {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .user-summary {
-        grid-template-columns: 1fr;
-    }
-
-    .detail-summary {
-        grid-template-columns: 1fr 1fr;
-    }
-
-}
-
-@media (max-width: 600px) {
-
-    .actions {
-        grid-template-columns: 1fr;
-    }
-
-    .balance {
-        font-size: 38px;
-    }
-
-    .balance-card {
-        padding: 28px;
-    }
-
-    .login-box {
-        padding: 30px 20px;
-    }
-
-    .transaction {
-        gap: 9px;
-        align-items: flex-start;
-    }
-
-    .transaction-amount {
-        font-size: 14px;
-    }
-
-    .debt-person-top {
-        align-items: flex-start;
-        flex-wrap: wrap;
-    }
-
-    .debt-amount {
-        margin-left: 0;
-        width: 100%;
-        text-align: left;
-    }
-
-    .detail-summary {
-        grid-template-columns: 1fr;
-    }
-
-}
-
+#productsView{display:none;max-width:1100px;margin:0 auto;padding:20px}
+.products-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.products-toolbar input{flex:1;min-width:220px}
+.product-action-button{border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:700;background:#111827;color:white}
+.product-action-button.secondary{background:#e5e7eb;color:#111827}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:15px}
+.product-card{background:white;border:1px solid #e5e7eb;border-radius:18px;padding:18px;box-shadow:0 4px 16px rgba(0,0,0,.05);cursor:pointer}
+.product-card-top{display:flex;justify-content:space-between;gap:12px}
+.product-card-name{font-size:18px;font-weight:800}
+.product-code{color:#6b7280;font-size:12px;margin-top:5px;word-break:break-all}
+.stock-badge{white-space:nowrap;background:#f3f4f6;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}
+.stock-badge.low{background:#fff7ed;color:#c2410c}.stock-badge.out{background:#fef2f2;color:#b91c1c}
+.product-prices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.product-price-box,.product-summary-stat{background:#f9fafb;border-radius:12px;padding:10px}
+.product-price-label,.product-summary-stat small{font-size:11px;color:#6b7280}
+.product-price-value{font-weight:800;margin-top:3px}.product-profit{margin-top:12px;font-weight:700}
+.product-variants{margin-top:12px;color:#6b7280;font-size:12px}
+.product-form-card{background:white;border-radius:18px;padding:20px;margin:18px 0;border:1px solid #e5e7eb;box-shadow:0 4px 16px rgba(0,0,0,.05);display:none}
+.product-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.product-form-grid .full{grid-column:1/-1}
+.product-form-card input,.product-form-card textarea{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font:inherit}
+.product-form-card label{display:block;font-weight:700;margin-bottom:6px;font-size:13px}
+.variant-row{display:grid;grid-template-columns:1.1fr 1.1fr 1.2fr .8fr 1fr 1fr auto;gap:7px;margin-bottom:8px;align-items:center}
+.variant-row input{min-width:0}.remove-variant{border:0;background:#fee2e2;color:#b91c1c;border-radius:9px;padding:9px;cursor:pointer}
+.scanner-box{display:none;background:#111827;color:white;border-radius:18px;padding:15px;margin-bottom:18px}
+#reader{width:100%;max-width:600px;margin:0 auto;background:white;border-radius:12px;overflow:hidden}
+.scanner-close{margin-top:10px}
+.product-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;padding:20px;overflow:auto}
+.product-modal{max-width:700px;margin:40px auto;background:white;border-radius:20px;padding:22px}
+.product-detail-code{background:#f3f4f6;border-radius:10px;padding:10px;margin-top:8px;word-break:break-all;font-family:monospace;font-size:13px}
+.variant-table{width:100%;border-collapse:collapse;margin-top:15px}
+.variant-table th,.variant-table td{border-bottom:1px solid #e5e7eb;padding:9px 6px;text-align:left;font-size:13px}
+.product-summary-box{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}
+.product-summary-stat strong{display:block;margin-top:4px}
+@media(max-width:700px){.product-form-grid{grid-template-columns:1fr}.product-form-grid .full{grid-column:auto}.variant-row{grid-template-columns:1fr 1fr}.product-summary-box{grid-template-columns:1fr}#productsView{padding:12px}}
 </style>
+
+
+<style>
+.finance-dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.finance-card{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 4px 16px rgba(0,0,0,.04)}
+.finance-card small{display:block;color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase}
+.finance-card strong{display:block;font-size:20px;margin-top:7px}
+.finance-card .finance-sub{font-size:11px;color:#6b7280;margin-top:5px}
+.finance-card.clickable{cursor:pointer}
+.color-stock-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.color-stock-chip{background:#f3f4f6;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}
+.stock-operation{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-top:15px}
+.stock-operation-grid{display:grid;grid-template-columns:1.3fr .8fr .9fr;gap:9px}
+.stock-operation select,.stock-operation input{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:10px;background:white}
+.ad-form{display:grid;grid-template-columns:1fr 1.5fr auto;gap:9px;margin-top:12px}
+.ad-form input{padding:11px;border:1px solid #d1d5db;border-radius:10px}
+@media(max-width:850px){.finance-dashboard{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.finance-dashboard{grid-template-columns:1fr}.stock-operation-grid,.ad-form{grid-template-columns:1fr}}
+</style>
+
 </head>
 
 <body>
 
 <!-- =====================================================
-     LOGIN
+     LOGINa
 ===================================================== -->
 
 <div id="loginPage">
@@ -1053,6 +275,29 @@ textarea {
 
     </div>
 
+    <div class="finance-dashboard">
+        <div class="finance-card">
+            <small>Cash Available</small>
+            <strong id="cashAvailable">0 DA</strong>
+            <div class="finance-sub">Money currently available</div>
+        </div>
+        <div class="finance-card">
+            <small>Stock Capital</small>
+            <strong id="stockCapital">0 DA</strong>
+            <div class="finance-sub">Purchase value of stock we still own</div>
+        </div>
+        <div class="finance-card">
+            <small>Total Capital</small>
+            <strong id="totalCapital">0 DA</strong>
+            <div class="finance-sub">Cash + current stock value</div>
+        </div>
+        <div class="finance-card clickable" onclick="openProductsView()">
+            <small>Ads Spent</small>
+            <strong id="adsSpent">0 DA</strong>
+            <div class="finance-sub">Total recorded advertising spend</div>
+        </div>
+    </div>
+
     <!-- ACTIONS -->
 
     <div class="actions">
@@ -1067,6 +312,12 @@ textarea {
             class="action-button remove-button"
             onclick="openForm('REMOVE')">
             − Remove Money
+        </button>
+
+        <button
+            class="action-button"
+            onclick="openProductsView()">
+            📦 Products
         </button>
 
     </div>
@@ -1118,6 +369,18 @@ textarea {
 
                 <option value="Private">
                     Private
+                </option>
+
+                <option value="Product Purchase">
+                    Product Purchase
+                </option>
+
+                <option value="Product Sale">
+                    Product Sale
+                </option>
+
+                <option value="Advertising">
+                    Advertising
                 </option>
 
             </select>
@@ -1549,6 +812,191 @@ textarea {
 
 </div>
 
+
+<!-- =====================================================
+     PRODUCTS / INVENTORY VIEW
+===================================================== -->
+
+<div id="productsView">
+
+    <div class="detail-header">
+        <button class="back-button" onclick="closeProductsView()">←</button>
+        <div class="detail-header-text">
+            <h1>Products</h1>
+            <p>Inventory, prices, barcodes and QR codes</p>
+        </div>
+    </div>
+
+    <div class="products-toolbar">
+        <input id="productSearch" type="search"
+               placeholder="Search name, barcode or QR code..."
+               oninput="renderProducts()">
+
+        <button class="product-action-button" onclick="openProductForm()">
+            + Add Product
+        </button>
+
+        <button class="product-action-button secondary"
+                onclick="startProductScanner()">
+            📷 Scan
+        </button>
+
+        <button class="product-action-button secondary"
+                onclick="loadProducts()">
+            ↻ Refresh
+        </button>
+
+        <button class="product-action-button secondary"
+                onclick="openAdSpendForm()">
+            📣 Add Ad Spend
+        </button>
+    </div>
+
+    <div id="adSpendForm" class="product-form-card">
+        <h2>Record Advertising Spend</h2>
+        <div class="ad-form">
+            <input id="adSpendAmount" type="number" min="0.01" step="0.01"
+                   placeholder="Amount">
+            <input id="adSpendReason" type="text"
+                   placeholder="Example: Facebook Ads - P47">
+            <button class="product-action-button" onclick="saveAdSpend()">
+                Save Ad Spend
+            </button>
+        </div>
+    </div>
+
+    <div id="productScanner" class="scanner-box">
+        <div style="font-weight:800;margin-bottom:10px;">
+            Scan a barcode or QR code
+        </div>
+
+        <div id="reader"></div>
+
+        <button class="product-action-button scanner-close"
+                onclick="stopProductScanner()">
+            Close scanner
+        </button>
+    </div>
+
+    <div id="productForm" class="product-form-card">
+
+        <h2 id="productFormTitle">Add Product</h2>
+
+        <div class="product-form-grid">
+
+            <div>
+                <label>Product name *</label>
+                <input id="productName" type="text"
+                       placeholder="Example: P47 Headset">
+            </div>
+
+            <div>
+                <label>Quantity</label>
+                <input id="productQuantity" type="number"
+                       min="0" step="1" value="0">
+            </div>
+
+            <div>
+                <label>Barcode</label>
+                <input id="productBarcode" type="text"
+                       placeholder="Scan or enter barcode">
+            </div>
+
+            <div>
+                <label>QR code</label>
+                <input id="productQRCode" type="text"
+                       placeholder="Scan or enter QR value">
+            </div>
+
+            <div>
+                <label>Purchase price / unit *</label>
+                <input id="productPurchasePrice" type="number"
+                       min="0" step="0.01" placeholder="0">
+            </div>
+
+            <div>
+                <label>Selling price / unit *</label>
+                <input id="productSellingPrice" type="number"
+                       min="0" step="0.01" placeholder="0">
+            </div>
+
+            <div>
+                <label>Colors</label>
+                <input id="productColors" type="text"
+                       placeholder="Black, White, Red">
+            </div>
+
+            <div>
+                <label>Sizes</label>
+                <input id="productSizes" type="text"
+                       placeholder="S, M, L, XL">
+            </div>
+
+            <div class="full">
+                <label>Notes</label>
+                <textarea id="productNotes" rows="3"
+                          placeholder="Optional notes..."></textarea>
+            </div>
+
+            <div class="full">
+                <label>
+                    Variants
+                    <span style="color:#6b7280;font-weight:400">
+                        (optional: color / size / any custom option)
+                    </span>
+                </label>
+
+                <div id="variantRows"></div>
+
+                <button type="button"
+                        class="product-action-button secondary"
+                        onclick="addVariantRow()">
+                    + Add Variant
+                </button>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+            <button class="product-action-button secondary"
+                    onclick="closeProductForm()">
+                Cancel
+            </button>
+
+            <button class="product-action-button"
+                    id="saveProductButton"
+                    onclick="saveProduct()">
+                Save Product
+            </button>
+        </div>
+    </div>
+
+    <div id="productsStatus" class="status">
+        Loading products...
+    </div>
+
+    <div id="productsGrid" class="product-grid"></div>
+</div>
+
+<div id="productModalOverlay" class="product-modal-overlay">
+    <div class="product-modal">
+
+        <div style="display:flex;justify-content:space-between;gap:15px">
+            <div>
+                <h2 id="productModalTitle">Product</h2>
+                <div id="productModalCode"></div>
+            </div>
+
+            <button class="product-action-button secondary"
+                    onclick="closeProductModal()">
+                ✕
+            </button>
+        </div>
+
+        <div id="productModalContent"></div>
+    </div>
+</div>
+
+
 <script>
 
 /* =====================================================
@@ -1612,6 +1060,7 @@ function logout() {
     currentUser = null;
 
     allTransactions = [];
+    allProducts = [];
 
     selectedDebtPerson = null;
 
@@ -1628,6 +1077,10 @@ function logout() {
         .style.display = "flex";
 
     closeForm();
+    document.getElementById("productsView").style.display = "none";
+    stopProductScanner();
+    closeProductModal();
+    closeProductForm();
 }
 
 /* =====================================================
@@ -1650,6 +1103,10 @@ function hideAllViews() {
 
     document
         .getElementById("privateUserView")
+        .style.display = "none";
+
+    document
+        .getElementById("productsView")
         .style.display = "none";
 }
 
@@ -2634,6 +2091,7 @@ async function loadData() {
             data.transactions || [];
 
         updateBalance(data.total);
+        updateFinancialDashboard(data.financials || {});
 
         updatePrivateStats(
             allTransactions
@@ -3526,8 +2984,795 @@ setInterval(
     1000
 );
 
+
+/* =====================================================
+   PRODUCTS / INVENTORY
+===================================================== */
+
+let allProducts = [];
+let editingProductId = null;
+let productScanner = null;
+
+function formatMoney(value) {
+    const n=Number(value)||0;
+    return n.toLocaleString("en-US",{maximumFractionDigits:2})+" DA";
+}
+
+function escapeHTML(value) {
+    return String(value??"")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+function escapeAttribute(value) {
+    return escapeHTML(value);
+}
+
+function updateFinancialDashboard(financials={}) {
+    const cash=Number(financials.cashAvailable||0);
+    const stock=Number(financials.stockCapital||0);
+    const capital=Number(financials.totalCapital||cash+stock);
+    const ads=Number(financials.adsSpent||0);
+
+    const set=(id,value)=>{
+        const el=document.getElementById(id);
+        if(el) el.textContent=formatMoney(value);
+    };
+
+    set("cashAvailable",cash);
+    set("stockCapital",stock);
+    set("totalCapital",capital);
+    set("adsSpent",ads);
+}
+
+function openProductsView() {
+    if(typeof closeForm==="function") closeForm();
+    hideAllViews();
+    document.getElementById("productsView").style.display="block";
+    currentView="products";
+    window.scrollTo({top:0,behavior:"smooth"});
+    loadProducts();
+}
+
+function closeProductsView() {
+    stopProductScanner();
+    closeProductForm();
+    closeProductModal();
+    closeAdSpendForm();
+    showTracker();
+}
+
+function setProductsStatus(message) {
+    const element=document.getElementById("productsStatus");
+    if(element) element.textContent=message;
+}
+
+async function loadProducts() {
+    if(!currentUser) return;
+
+    setProductsStatus("Loading products...");
+
+    try {
+        const response=await fetch(API_URL+"?action=getProducts");
+        const data=await response.json();
+
+        if(!data.success)
+            throw new Error(data.error||"Could not load products.");
+
+        allProducts=data.products||[];
+        updateFinancialDashboard(data.financials||{});
+        renderProducts();
+
+        setProductsStatus(
+            "Products: "+allProducts.length+
+            " • Updated: "+new Date().toLocaleTimeString()
+        );
+    } catch(error) {
+        console.error(error);
+        setProductsStatus("Could not load products: "+error.message);
+    }
+}
+
+function getColorSummary(product) {
+    const summary={};
+    const variants=product.variants||[];
+
+    if(variants.length) {
+        variants.forEach(v=>{
+            const color=(v.color||"No color").trim()||"No color";
+            summary[color]=(summary[color]||0)+Number(v.quantity||0);
+        });
+    } else if(product.colors) {
+        const colors=String(product.colors).split(",").map(x=>x.trim()).filter(Boolean);
+        if(colors.length===1) summary[colors[0]]=Number(product.quantity||0);
+    }
+
+    return summary;
+}
+
+function renderColorChips(product) {
+    const summary=getColorSummary(product);
+    const entries=Object.entries(summary);
+
+    if(!entries.length) return "";
+
+    return `<div class="color-stock-list">${
+        entries.map(([color,qty])=>
+            `<span class="color-stock-chip">${escapeHTML(color)}: ${qty}</span>`
+        ).join("")
+    }</div>`;
+}
+
+function renderProducts() {
+    const grid=document.getElementById("productsGrid");
+    if(!grid) return;
+
+    const search=(document.getElementById("productSearch")?.value||"")
+        .trim().toLowerCase();
+
+    const filtered=allProducts.filter(product =>
+        String(product.name||"").toLowerCase().includes(search) ||
+        String(product.barcode||"").toLowerCase().includes(search) ||
+        String(product.qrCode||"").toLowerCase().includes(search) ||
+        String(product.colors||"").toLowerCase().includes(search) ||
+        String(product.sizes||"").toLowerCase().includes(search) ||
+        (product.variants||[]).some(v=>
+            String(v.color||"").toLowerCase().includes(search) ||
+            String(v.size||"").toLowerCase().includes(search) ||
+            String(v.option||"").toLowerCase().includes(search)
+        )
+    );
+
+    if(!filtered.length) {
+        grid.innerHTML='<div class="empty" style="grid-column:1/-1">No products found.</div>';
+        return;
+    }
+
+    grid.innerHTML="";
+
+    filtered.forEach(product=>{
+        const quantity=Number(product.quantity||0);
+        const purchase=Number(product.purchasePrice||0);
+        const selling=Number(product.sellingPrice||0);
+        const profitPerUnit=selling-purchase;
+        const expectedProfit=profitPerUnit*quantity;
+
+        let stockClass="";
+        if(quantity<=0) stockClass="out";
+        else if(quantity<=5) stockClass="low";
+
+        const card=document.createElement("div");
+        card.className="product-card";
+        card.onclick=()=>openProductDetails(product.id);
+
+        card.innerHTML=`
+            <div class="product-card-top">
+                <div>
+                    <div class="product-card-name">${escapeHTML(product.name)}</div>
+                    <div class="product-code">
+                        ${product.barcode
+                            ?"Barcode: "+escapeHTML(product.barcode)
+                            :"No barcode"}
+                    </div>
+                </div>
+                <div class="stock-badge ${stockClass}">
+                    ${quantity} in stock
+                </div>
+            </div>
+
+            ${renderColorChips(product)}
+
+            <div class="product-prices">
+                <div class="product-price-box">
+                    <div class="product-price-label">BUY</div>
+                    <div class="product-price-value">${formatMoney(purchase)}</div>
+                </div>
+                <div class="product-price-box">
+                    <div class="product-price-label">SELL</div>
+                    <div class="product-price-value">${formatMoney(selling)}</div>
+                </div>
+            </div>
+
+            <div class="product-profit">
+                Profit/unit: ${formatMoney(profitPerUnit)}
+            </div>
+
+            <div class="product-variants">
+                ${product.sizes
+                    ?"Sizes: "+escapeHTML(product.sizes)+"<br>":""}
+                ${product.variants?.length
+                    ?product.variants.length+" variant(s)"
+                    :"No variants"}
+            </div>
+
+            <div style="margin-top:12px;color:#6b7280;font-size:12px">
+                Stock cost: <strong>${formatMoney(getProductStockCost(product))}</strong>
+                <br>Expected stock profit:
+                <strong>${formatMoney(expectedProfit)}</strong>
+                <br>Click to manage →
+            </div>
+        `;
+
+        grid.appendChild(card);
+    });
+}
+
+function getProductStockCost(product) {
+    const variants=product.variants||[];
+    if(variants.length) {
+        return variants.reduce(
+            (sum,v)=>sum+Number(v.quantity||0)*Number(v.purchasePrice||product.purchasePrice||0),
+            0
+        );
+    }
+    return Number(product.quantity||0)*Number(product.purchasePrice||0);
+}
+
+function openProductForm(productId=null) {
+    editingProductId=productId;
+
+    document.getElementById("productForm").style.display="block";
+    document.getElementById("variantRows").innerHTML="";
+
+    const title=document.getElementById("productFormTitle");
+    const button=document.getElementById("saveProductButton");
+
+    if(!productId) {
+        title.textContent="Add Product";
+        button.textContent="Save Product";
+
+        [
+            "productName","productBarcode","productQRCode",
+            "productPurchasePrice","productSellingPrice",
+            "productColors","productSizes","productNotes"
+        ].forEach(id=>document.getElementById(id).value="");
+
+        document.getElementById("productQuantity").value="0";
+        document.getElementById("productQuantity").disabled=false;
+        return;
+    }
+
+    const product=allProducts.find(
+        item=>String(item.id)===String(productId)
+    );
+
+    if(!product) return alert("Product not found.");
+
+    title.textContent="Edit Product";
+    button.textContent="Update Product";
+
+    document.getElementById("productName").value=product.name||"";
+    document.getElementById("productQuantity").value=product.quantity||0;
+    document.getElementById("productQuantity").disabled=true;
+    document.getElementById("productBarcode").value=product.barcode||"";
+    document.getElementById("productQRCode").value=product.qrCode||"";
+    document.getElementById("productPurchasePrice").value=product.purchasePrice??"";
+    document.getElementById("productSellingPrice").value=product.sellingPrice??"";
+    document.getElementById("productColors").value=product.colors||"";
+    document.getElementById("productSizes").value=product.sizes||"";
+    document.getElementById("productNotes").value=product.notes||"";
+
+    (product.variants||[]).forEach(addVariantRow);
+
+    document.querySelectorAll("#variantRows .variant-quantity")
+        .forEach(el=>el.disabled=true);
+}
+
+function closeProductForm() {
+    const form=document.getElementById("productForm");
+    if(form) form.style.display="none";
+    editingProductId=null;
+}
+
+function addVariantRow(variant={}) {
+    const container=document.getElementById("variantRows");
+    const row=document.createElement("div");
+    row.className="variant-row";
+
+    row.dataset.variantId = variant.id || "";
+    row.innerHTML=`
+        <input class="variant-color" type="text" placeholder="Color"
+               value="${escapeAttribute(variant.color||"")}">
+        <input class="variant-size" type="text" placeholder="Size"
+               value="${escapeAttribute(variant.size||"")}">
+        <input class="variant-option" type="text" placeholder="Other option"
+               value="${escapeAttribute(variant.option||"")}">
+        <input class="variant-quantity" type="number" min="0" step="1"
+               placeholder="Qty" value="${Number(variant.quantity||0)}">
+        <input class="variant-purchase" type="number" min="0" step="0.01"
+               placeholder="Buy" value="${variant.purchasePrice??""}">
+        <input class="variant-selling" type="number" min="0" step="0.01"
+               placeholder="Sell" value="${variant.sellingPrice??""}">
+        <button type="button" class="remove-variant"
+                ${editingProductId && variant.id ? "disabled title=\"Existing stock variant cannot be removed here\"":""}
+                onclick="this.parentElement.remove()">✕</button>
+    `;
+
+    container.appendChild(row);
+
+    if(editingProductId) {
+        row.querySelector(".variant-quantity").disabled=true;
+    }
+}
+
+function collectVariants() {
+    return Array.from(
+        document.querySelectorAll("#variantRows .variant-row")
+    ).map(row=>({
+        id:row.dataset.variantId || "",
+        color:row.querySelector(".variant-color").value.trim(),
+        size:row.querySelector(".variant-size").value.trim(),
+        option:row.querySelector(".variant-option").value.trim(),
+        quantity:Number(row.querySelector(".variant-quantity").value)||0,
+        purchasePrice:Number(row.querySelector(".variant-purchase").value)||0,
+        sellingPrice:Number(row.querySelector(".variant-selling").value)||0
+    }));
+}
+
+async function saveProduct() {
+    const name=document.getElementById("productName").value.trim();
+    const quantity=Number(document.getElementById("productQuantity").value)||0;
+    const purchasePrice=Number(document.getElementById("productPurchasePrice").value);
+    const sellingPrice=Number(document.getElementById("productSellingPrice").value);
+
+    if(!name) return alert("Please enter a product name.");
+    if(!Number.isFinite(purchasePrice)||purchasePrice<0)
+        return alert("Please enter a valid purchase price.");
+    if(!Number.isFinite(sellingPrice)||sellingPrice<0)
+        return alert("Please enter a valid selling price.");
+    if(quantity<0) return alert("Quantity cannot be negative.");
+
+    let variants=collectVariants();
+
+    if(!editingProductId && variants.length) {
+        const variantTotal=variants.reduce(
+            (sum,v)=>sum+Number(v.quantity||0),0
+        );
+
+        if(variantTotal!==quantity) {
+            document.getElementById("productQuantity").value=variantTotal;
+        }
+    }
+
+    const finalQuantity=Number(document.getElementById("productQuantity").value)||0;
+
+    const product={
+        id:editingProductId||"",
+        name,
+        barcode:document.getElementById("productBarcode").value.trim(),
+        qrCode:document.getElementById("productQRCode").value.trim(),
+        purchasePrice,
+        sellingPrice,
+        quantity:editingProductId
+            ?Number(allProducts.find(p=>String(p.id)===String(editingProductId))?.quantity||0)
+            :finalQuantity,
+        colors:document.getElementById("productColors").value.trim(),
+        sizes:document.getElementById("productSizes").value.trim(),
+        notes:document.getElementById("productNotes").value.trim(),
+        variants
+    };
+
+    const wasEditing=Boolean(editingProductId);
+    const button=document.getElementById("saveProductButton");
+    button.disabled=true;
+    button.textContent="Saving...";
+
+    try {
+        const response=await fetch(API_URL,{
+            method:"POST",
+            body:JSON.stringify({
+                action:wasEditing?"updateProduct":"addProduct",
+                user:currentUser,
+                product
+            })
+        });
+
+        const result=await response.json();
+
+        if(!result.success)
+            throw new Error(result.error||"Could not save product.");
+
+        closeProductForm();
+        await loadProducts();
+        await loadData();
+        setProductsStatus(wasEditing?"Product updated ✓":"Product added ✓");
+
+    } catch(error) {
+        console.error(error);
+        alert("Could not save product.\n\n"+error.message);
+    } finally {
+        button.disabled=false;
+        button.textContent=wasEditing?"Update Product":"Save Product";
+    }
+}
+
+function buildVariantOptions(product) {
+    const variants=product.variants||[];
+
+    if(!variants.length)
+        return `<option value="">Main product stock</option>`;
+
+    return `<option value="">Select color / variant...</option>`+
+        variants.map(v=>{
+            const label=[
+                v.color,
+                v.size,
+                v.option
+            ].filter(Boolean).join(" / ")||"Variant";
+
+            return `<option value="${escapeAttribute(v.id)}">
+                ${escapeHTML(label)} — ${Number(v.quantity||0)} in stock
+            </option>`;
+        }).join("");
+}
+
+function openProductDetails(productId) {
+    const product=allProducts.find(
+        item=>String(item.id)===String(productId)
+    );
+    if(!product) return;
+
+    const quantity=Number(product.quantity||0);
+    const purchase=Number(product.purchasePrice||0);
+    const selling=Number(product.sellingPrice||0);
+    const variants=product.variants||[];
+
+    document.getElementById("productModalTitle").textContent=product.name;
+
+    document.getElementById("productModalCode").innerHTML=`
+        ${product.barcode
+            ?`<div class="product-detail-code">Barcode: ${escapeHTML(product.barcode)}</div>`:""}
+        ${product.qrCode
+            ?`<div class="product-detail-code">QR: ${escapeHTML(product.qrCode)}</div>`:""}
+    `;
+
+    const variantsHTML=variants.length?`
+        <h3 style="margin-top:20px">Color / Variant Stock</h3>
+        <div style="overflow:auto">
+            <table class="variant-table">
+                <thead>
+                    <tr>
+                        <th>Color</th><th>Size</th><th>Other</th>
+                        <th>Qty</th><th>Buy</th><th>Sell</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${variants.map(v=>`
+                        <tr>
+                            <td>${escapeHTML(v.color||"—")}</td>
+                            <td>${escapeHTML(v.size||"—")}</td>
+                            <td>${escapeHTML(v.option||"—")}</td>
+                            <td><strong>${Number(v.quantity||0)}</strong></td>
+                            <td>${formatMoney(v.purchasePrice)}</td>
+                            <td>${formatMoney(v.sellingPrice)}</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>`:"";
+
+    document.getElementById("productModalContent").innerHTML=`
+        <div class="product-summary-box">
+            <div class="product-summary-stat">
+                <small>Total Stock</small><strong>${quantity}</strong>
+            </div>
+            <div class="product-summary-stat">
+                <small>Buy / unit</small><strong>${formatMoney(purchase)}</strong>
+            </div>
+            <div class="product-summary-stat">
+                <small>Sell / unit</small><strong>${formatMoney(selling)}</strong>
+            </div>
+        </div>
+
+        <div class="product-summary-box">
+            <div class="product-summary-stat">
+                <small>Stock Capital</small>
+                <strong>${formatMoney(getProductStockCost(product))}</strong>
+            </div>
+            <div class="product-summary-stat">
+                <small>Expected Revenue</small>
+                <strong>${formatMoney(selling*quantity)}</strong>
+            </div>
+            <div class="product-summary-stat">
+                <small>Expected Profit</small>
+                <strong>${formatMoney((selling*quantity)-getProductStockCost(product))}</strong>
+            </div>
+        </div>
+
+        ${renderColorChips(product)}
+
+        ${variantsHTML}
+
+        <div class="stock-operation">
+            <h3>Stock Operation</h3>
+            <p style="font-size:12px;color:#6b7280;margin:5px 0 10px">
+                Buying stock removes money. Selling stock adds money.
+            </p>
+
+            <div class="stock-operation-grid">
+                <select id="stockVariant">
+                    ${buildVariantOptions(product)}
+                </select>
+                <input id="stockQuantity" type="number"
+                       min="1" step="1" placeholder="Quantity">
+                <select id="stockAction">
+                    <option value="PURCHASE">+ Buy Stock</option>
+                    <option value="SALE">− Sell Stock</option>
+                </select>
+            </div>
+
+            <button class="product-action-button"
+                    style="margin-top:10px"
+                    onclick="processStockOperation('${escapeAttribute(product.id)}')">
+                Apply Stock Operation
+            </button>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">
+            <button class="product-action-button"
+                onclick="closeProductModal();openProductForm('${escapeAttribute(product.id)}')">
+                Edit Product
+            </button>
+            <button class="product-action-button secondary"
+                onclick="deleteProduct('${escapeAttribute(product.id)}')">
+                Delete
+            </button>
+        </div>
+    `;
+
+    document.getElementById("productModalOverlay").style.display="block";
+}
+
+function closeProductModal() {
+    const modal=document.getElementById("productModalOverlay");
+    if(modal) modal.style.display="none";
+}
+
+async function processStockOperation(productId) {
+    const product=allProducts.find(
+        item=>String(item.id)===String(productId)
+    );
+    if(!product) return;
+
+    const variantId=document.getElementById("stockVariant").value;
+    const quantity=Number(document.getElementById("stockQuantity").value);
+    const action=document.getElementById("stockAction").value;
+
+    if(!Number.isInteger(quantity)||quantity<=0)
+        return alert("Enter a whole quantity greater than 0.");
+
+    const variant=(product.variants||[]).find(
+        v=>String(v.id)===String(variantId)
+    );
+
+    if(product.variants?.length && !variant)
+        return alert("Select a color / variant first.");
+
+    if(action==="SALE") {
+        const currentStock=variant
+            ?Number(variant.quantity||0)
+            :Number(product.quantity||0);
+
+        if(quantity>currentStock)
+            return alert("Not enough stock.");
+    }
+
+    const operationName=action==="PURCHASE"?"buy":"sell";
+
+    if(!confirm(
+        `Confirm ${operationName} ${quantity} unit(s)?\n\n`+
+        (variant
+            ?[
+                variant.color,variant.size,variant.option
+             ].filter(Boolean).join(" / ")
+            :product.name)
+    )) return;
+
+    try {
+        const response=await fetch(API_URL,{
+            method:"POST",
+            body:JSON.stringify({
+                action:"stockOperation",
+                user:currentUser,
+                id:productId,
+                variantId:variantId,
+                quantity:quantity,
+                operation:action
+            })
+        });
+
+        const result=await response.json();
+
+        if(!result.success)
+            throw new Error(result.error||"Stock operation failed.");
+
+        closeProductModal();
+        await loadProducts();
+        await loadData();
+
+        setProductsStatus(
+            action==="PURCHASE"
+                ?"Stock purchased ✓ Money deducted"
+                :"Stock sold ✓ Money added"
+        );
+
+    } catch(error) {
+        alert("Stock operation failed.\n\n"+error.message);
+    }
+}
+
+function openAdSpendForm() {
+    const form=document.getElementById("adSpendForm");
+    if(form) form.style.display="block";
+}
+
+function closeAdSpendForm() {
+    const form=document.getElementById("adSpendForm");
+    if(form) form.style.display="none";
+}
+
+async function saveAdSpend() {
+    const amount=Number(document.getElementById("adSpendAmount").value);
+    const reason=document.getElementById("adSpendReason").value.trim();
+
+    if(!Number.isFinite(amount)||amount<=0)
+        return alert("Enter a valid advertising amount.");
+
+    try {
+        const response=await fetch(API_URL,{
+            method:"POST",
+            body:JSON.stringify({
+                action:"addAdSpend",
+                user:currentUser,
+                amount,
+                reason
+            })
+        });
+
+        const result=await response.json();
+
+        if(!result.success)
+            throw new Error(result.error||"Could not record ad spend.");
+
+        document.getElementById("adSpendAmount").value="";
+        document.getElementById("adSpendReason").value="";
+        closeAdSpendForm();
+
+        await loadProducts();
+        await loadData();
+
+        alert("Ad spend recorded. Money has been deducted from Total Money.");
+
+    } catch(error) {
+        alert("Could not record ad spend.\n\n"+error.message);
+    }
+}
+
+async function deleteProduct(productId) {
+    const product=allProducts.find(
+        item=>String(item.id)===String(productId)
+    );
+    if(!product) return;
+
+    if(!confirm(
+        "Delete this product?\n\n"+
+        product.name+
+        "\n\nThis deletes its variants too. Existing money transactions are kept."
+    )) return;
+
+    try {
+        const response=await fetch(API_URL,{
+            method:"POST",
+            body:JSON.stringify({
+                action:"deleteProduct",
+                user:currentUser,
+                id:productId
+            })
+        });
+
+        const result=await response.json();
+
+        if(!result.success)
+            throw new Error(result.error||"Could not delete product.");
+
+        closeProductModal();
+        await loadProducts();
+        await loadData();
+        setProductsStatus("Product deleted ✓");
+
+    } catch(error) {
+        alert("Could not delete product.\n\n"+error.message);
+    }
+}
+
+async function startProductScanner() {
+    document.getElementById("productScanner").style.display="block";
+
+    if(!window.Html5Qrcode) {
+        alert("Scanner library could not be loaded. Check your internet connection.");
+        return;
+    }
+
+    if(productScanner) return;
+
+    productScanner=new Html5Qrcode("reader");
+
+    try {
+        await productScanner.start(
+            {facingMode:"environment"},
+            {fps:10,qrbox:{width:250,height:180}},
+            code=>handleScannedProductCode(code),
+            ()=>{}
+        );
+    } catch(error) {
+        console.error(error);
+        productScanner=null;
+        alert(
+            "Could not start the camera.\n\n"+
+            "Allow camera permission and make sure the page uses HTTPS."
+        );
+    }
+}
+
+async function stopProductScanner() {
+    if(productScanner) {
+        try {
+            await productScanner.stop();
+            productScanner.clear();
+        } catch(error) {
+            console.error(error);
+        }
+        productScanner=null;
+    }
+
+    const scanner=document.getElementById("productScanner");
+    if(scanner) scanner.style.display="none";
+}
+
+function handleScannedProductCode(code) {
+    const scanned=String(code||"").trim();
+    if(!scanned) return;
+
+    stopProductScanner();
+
+    const product=allProducts.find(item=>
+        String(item.barcode||"").trim()===scanned ||
+        String(item.qrCode||"").trim()===scanned
+    );
+
+    if(product) {
+        openProductDetails(product.id);
+        return;
+    }
+
+    openProductForm();
+    document.getElementById("productBarcode").value=scanned;
+
+    alert(
+        "This code is not registered yet.\n\n"+
+        "The scanned value was placed in the Barcode field."
+    );
+}
+
+/* =====================================================
+   PRODUCTS AUTO REFRESH
+===================================================== */
+
+const originalLoadDataForProducts=loadData;
+
+loadData=async function() {
+    await originalLoadDataForProducts();
+
+    if(currentUser && currentView==="products") {
+        await loadProducts();
+    }
+};
+
+
 </script>
 
 </body>
 </html>
-```
