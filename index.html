@@ -1,639 +1,1268 @@
 <!DOCTYPE html>
-
-<html lang="ar" dir="rtl">
-
+<html lang="en">
 <head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>OurCase</title>
-
-
-<style>
-
-
-*{
-box-sizing:border-box;
-font-family:Tahoma,Arial,sans-serif;
-}
-
-
-
-body{
-
-margin:0;
-
-min-height:100vh;
-
-display:flex;
-
-justify-content:center;
-
-align-items:center;
-
-background:#f5f7fb;
-
-padding:20px;
-
-}
-
-
-
-.container{
-
-
-width:100%;
-
-max-width:430px;
-
-
-background:white;
-
-
-padding:35px 25px;
-
-
-border-radius:22px;
-
-
-border-top:5px solid #d40000;
-
-
-box-shadow:
-
-0 10px 35px rgba(0,0,0,.12);
-
-
-text-align:center;
-
-
-}
-
-
-
-
-.logo-img{
-
-
-width:180px;
-
-
-max-width:85%;
-
-
-margin-bottom:15px;
-
-
-}
-
-
-
-
-
-.subtitle{
-
-
-color:#777;
-
-
-font-size:17px;
-
-
-margin-bottom:25px;
-
-
-}
-
-
-
-
-
-
-
-.pin-boxes{
-
-
-display:flex;
-
-
-justify-content:center;
-
-
-gap:12px;
-
-
-direction:ltr;
-
-
-}
-
-
-
-
-
-
-
-.pin-box{
-
-
-width:60px;
-
-
-height:60px;
-
-
-border-radius:14px;
-
-
-border:2px solid #ddd;
-
-
-font-size:30px;
-
-
-text-align:center;
-
-
-outline:none;
-
-
-background:#fafafa;
-
-
-}
-
-
-
-
-
-.pin-box:focus{
-
-
-border-color:#d40000;
-
-
-box-shadow:0 0 12px #ffcaca;
-
-
-}
-
-
-
-
-
-
-button{
-
-
-width:100%;
-
-
-margin-top:20px;
-
-
-padding:15px;
-
-
-background:#d40000;
-
-
-color:white;
-
-
-border:none;
-
-
-border-radius:12px;
-
-
-font-size:17px;
-
-
-cursor:pointer;
-
-
-}
-
-
-
-
-button:hover{
-
-
-background:#a80000;
-
-
-}
-
-
-
-
-
-#error{
-
-
-color:#d40000;
-
-
-margin-top:15px;
-
-
-}
-
-
-
-
-
-
-.case-image{
-
-
-width:100%;
-
-
-margin-top:15px;
-
-
-border-radius:15px;
-
-
-border:1px solid #eee;
-
-
-box-shadow:
-
-0 5px 20px rgba(0,0,0,.1);
-
-
-}
-
-
-
-
-
-
-@media(max-width:500px){
-
-
-.pin-box{
-
-
-width:55px;
-
-
-height:55px;
-
-
-}
-
-
-
-.container{
-
-
-padding:25px 18px;
-
-
-}
-
-
-
-}
-
-
-
-
-</style>
-
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store & Money Manager</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
-
-
-
 <body>
 
+    <!-- PAGE 1: USER SELECTION -->
+    <div id="userSelectPage" class="page active">
+        <div class="card-container">
+            <h2>Who is using the app?</h2>
+
+            <div class="user-buttons">
+                <button onclick="selectUser('I')" class="user-btn">
+                    User I
+                </button>
+
+                <button onclick="selectUser('N')" class="user-btn">
+                    User N
+                </button>
+            </div>
+        </div>
+    </div>
 
 
+    <!-- PAGE 2: MAIN APP -->
+    <div id="mainAppPage" class="page">
+
+        <!-- NAVBAR -->
+        <nav class="navbar">
+            <span>
+                Logged in as:
+                <strong id="navUser"></strong>
+            </span>
+
+            <button onclick="switchUser()" class="switch-btn">
+                Switch User
+            </button>
+        </nav>
 
 
-<div class="container">
+        <!-- TABS -->
+        <div class="tabs">
+
+            <button
+                onclick="switchTab('money')"
+                class="tab-btn active"
+                id="tabMoney">
+                Money
+            </button>
+
+            <button
+                onclick="switchTab('stock')"
+                class="tab-btn"
+                id="tabStock">
+                Stock
+            </button>
+
+            <button
+                onclick="switchTab('checkout')"
+                class="tab-btn"
+                id="tabCheckout">
+                Checkout
+            </button>
+
+        </div>
 
 
+        <!-- ========================================= -->
+        <!-- MONEY -->
+        <!-- ========================================= -->
+
+        <div id="sectionMoney" class="section-content active">
+
+            <div class="dashboard-grid">
+
+                <div class="card">
+                    <h3>Cash Money</h3>
+                    <p id="totalCash">$0.00</p>
+                </div>
+
+                <div class="card">
+                    <h3>Total Debt</h3>
+                    <p id="totalDebt">$0.00</p>
+                </div>
+
+                <div class="card highlight-card">
+                    <h3>Total Money (Net)</h3>
+                    <p id="totalNetMoney">$0.00</p>
+                </div>
+
+            </div>
 
 
+            <!-- PRIVATE BALANCES -->
+            <div class="panel">
+
+                <h3>Private Balances (I & N)</h3>
+
+                <div class="profiles-grid">
+
+                    <div
+                        class="profile-card"
+                        onclick="openProfile('I')">
+
+                        <h4>User I (Private)</h4>
+
+                        <p id="privateI">$0.00</p>
+
+                        <small>
+                            Click to view history
+                        </small>
+
+                    </div>
 
 
-<img src="logo white1 (2).png" class="logo-img">
+                    <div
+                        class="profile-card"
+                        onclick="openProfile('N')">
+
+                        <h4>User N (Private)</h4>
+
+                        <p id="privateN">$0.00</p>
+
+                        <small>
+                            Click to view history
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
 
 
+            <!-- DEBT -->
+            <div class="panel">
+
+                <h3>Debt Profiles</h3>
+
+                <div
+                    id="debtProfilesContainer"
+                    class="profiles-grid">
+
+                    <small
+                        style="
+                            color: var(--text-muted);
+                            text-align: center;
+                            width: 100%;
+                        ">
+                        Loading debt profiles...
+                    </small>
+
+                </div>
+
+            </div>
 
 
+            <!-- MONEY TRANSACTION -->
+            <div class="panel">
+
+                <h3>Add Money Transaction</h3>
+
+                <form id="transactionForm">
+
+                    <div class="form-group">
+
+                        <label>Action:</label>
+
+                        <select id="action" required>
+
+                            <option value="Add">
+                                Add Money
+                            </option>
+
+                            <option value="Remove">
+                                Remove Money
+                            </option>
+
+                        </select>
+
+                    </div>
 
 
-<div class="subtitle">
+                    <div class="form-group">
 
-ملفات التحقيق السرية
+                        <label>Amount ($):</label>
+
+                        <input
+                            type="number"
+                            id="amount"
+                            step="0.01"
+                            required>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>Reason (Category):</label>
+
+                        <select
+                            id="category"
+                            onchange="handleCategoryChange()"
+                            required>
+
+                            <option value="Work">
+                                Work
+                            </option>
+
+                            <option value="Private">
+                                Private
+                            </option>
+
+                            <option value="Debt">
+                                Debt
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div
+                        class="form-group"
+                        id="profileGroup"
+                        style="display:none;">
+
+                        <label id="profileLabel">
+                            Profile Name:
+                        </label>
+
+                        <input
+                            type="text"
+                            id="profile"
+                            placeholder="Enter name">
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        id="submitBtn">
+
+                        Save Transaction
+
+                    </button>
+
+                </form>
+
+
+                <p id="statusMessage"></p>
+
+            </div>
+
+
+            <!-- TRANSACTION HISTORY -->
+            <div class="panel">
+
+                <h3>Transaction History</h3>
+
+                <ul id="historyList">
+                    Loading...
+                </ul>
+
+            </div>
+
+        </div>
+
+
+        <!-- ========================================= -->
+        <!-- STOCK -->
+        <!-- ========================================= -->
+
+        <div id="sectionStock" class="section-content">
+
+            <div class="panel">
+
+                <h3>Stores Management</h3>
+
+                <div
+                    style="
+                        display:flex;
+                        gap:10px;
+                        margin-bottom:15px;
+                    ">
+
+                    <input
+                        type="text"
+                        id="newStoreName"
+                        placeholder="New Store Name"
+                        style="
+                            flex:1;
+                            padding:8px;
+                            border-radius:6px;
+                            border:1px solid #d1d5db;
+                        ">
+
+                    <button
+                        onclick="createStore()"
+                        style="
+                            padding:8px 16px;
+                            background:var(--primary);
+                            color:white;
+                            border:none;
+                            border-radius:6px;
+                            font-weight:bold;
+                            cursor:pointer;
+                        ">
+
+                        Add Store
+
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="storesContainer"
+                    style="
+                        display:flex;
+                        flex-direction:column;
+                        gap:10px;
+                    ">
+
+                    <small
+                        style="color:var(--text-muted);">
+
+                        Loading stores...
+
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <!-- STORE DETAIL -->
+            <div
+                id="storeDetailView"
+                class="panel"
+                style="display:none;">
+
+                <button
+                    onclick="backToStores()"
+                    class="switch-btn"
+                    style="margin-bottom:15px;">
+
+                    &larr; Back to Stores
+
+                </button>
+
+
+                <h3 id="detailStoreName">
+                    Store Name
+                </h3>
+
+
+                <div
+                    class="dashboard-grid"
+                    style="
+                        margin-bottom:15px;
+                        display:flex;
+                        flex-wrap:wrap;
+                        gap:8px;
+                    ">
+
+                    <div
+                        class="card"
+                        style="flex:1;min-width:100px;">
+
+                        <h3>Store Capital</h3>
+
+                        <p id="storeCapital">
+                            $0.00
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="card"
+                        style="flex:1;min-width:100px;">
+
+                        <h3>Ad Spend</h3>
+
+                        <p id="storeAds">
+                            $0.00
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="card"
+                        style="
+                            flex:1;
+                            min-width:100px;
+                            background:#fdf4ff;
+                            border:1px solid #d946ef;
+                        ">
+
+                        <h3 style="color:#d946ef;">
+                            Profit
+                        </h3>
+
+                        <p
+                            id="storeProfit"
+                            style="color:#c026d3;">
+
+                            $0.00
+
+                        </p>
+
+                    </div>
+
+
+                    <div
+                        class="card highlight-card"
+                        style="flex:1;min-width:100px;">
+
+                        <h3>Net Value</h3>
+
+                        <p id="storeNet">
+                            $0.00
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    style="
+                        margin-bottom:15px;
+                        display:flex;
+                        gap:10px;
+                    ">
+
+                    <button
+                        onclick="openAddProductModal()"
+                        style="
+                            flex:1;
+                            padding:8px;
+                            background:var(--success);
+                            color:white;
+                            border:none;
+                            border-radius:6px;
+                            font-weight:bold;
+                            cursor:pointer;
+                        ">
+
+                        Add Product
+
+                    </button>
+
+
+                    <button
+                        onclick="openAddAdModal()"
+                        style="
+                            flex:1;
+                            padding:8px;
+                            background:#f59e0b;
+                            color:white;
+                            border:none;
+                            border-radius:6px;
+                            font-weight:bold;
+                            cursor:pointer;
+                        ">
+
+                        Add Ad Expense
+
+                    </button>
+
+                </div>
+
+
+                <h4>Products</h4>
+
+                <div
+                    id="storeProductsList"
+                    style="
+                        display:flex;
+                        flex-direction:column;
+                        gap:10px;
+                    ">
+                </div>
+
+            </div>
+
+        </div>
+
+
+<!-- CHECKOUT -->
+<div id="sectionCheckout" class="section-content">
+
+    <div class="panel">
+
+        <h3>Checkout</h3>
+
+        <p style="color:var(--text-muted);">
+            Create an order with multiple products.
+        </p>
+
+
+        <!-- STORE -->
+
+        <div class="form-group">
+
+            <label>
+                Store
+            </label>
+
+            <select
+                id="checkoutStore"
+                onchange="checkoutStoreChanged()">
+
+                <option value="">
+                    Select a store
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- ADD PRODUCT -->
+
+        <div
+            style="
+                background:#f9fafb;
+                border:1px solid #e5e7eb;
+                border-radius:10px;
+                padding:12px;
+                margin-bottom:15px;
+            ">
+
+            <h4 style="margin-top:0;">
+                Add Products
+            </h4>
+
+
+            <div class="form-group">
+
+                <label>
+                    Product
+                </label>
+
+                <select
+                    id="checkoutProduct"
+                    onchange="checkoutProductChanged()">
+
+                    <option value="">
+                        Select product
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Variation / Color
+                </label>
+
+                <select
+                    id="checkoutVariant">
+
+                    <option value="">
+                        No variation
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Quantity
+                </label>
+
+                <input
+                    type="number"
+                    id="checkoutQuantity"
+                    min="1"
+                    value="1">
+
+            </div>
+
+
+            <button
+                type="button"
+                onclick="addCheckoutProduct()"
+                style="
+                    width:100%;
+                    padding:10px;
+                    border:none;
+                    border-radius:7px;
+                    background:var(--primary);
+                    color:white;
+                    font-weight:bold;
+                    cursor:pointer;
+                ">
+
+                + Add Product
+
+            </button>
+
+        </div>
+
+
+        <!-- SELECTED PRODUCTS -->
+
+        <div
+            style="
+                margin-bottom:15px;
+            ">
+
+            <h4>
+                Products in this Order
+            </h4>
+
+            <div
+                id="checkoutItems"
+                style="
+                    display:flex;
+                    flex-direction:column;
+                    gap:8px;
+                ">
+
+                <small style="color:var(--text-muted);">
+                    No products added yet.
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- SELLING PRICE -->
+
+        <div class="form-group">
+
+            <label>
+                Total Selling Price
+            </label>
+
+            <input
+                type="number"
+                id="checkoutSellingPrice"
+                min="0"
+                step="0.01"
+                placeholder="Example: 100">
+
+            <small style="color:var(--text-muted);">
+                This is the total price for all products in this order.
+            </small>
+
+        </div>
+
+
+        <!-- DELIVERY -->
+
+        <div class="form-group">
+
+            <label>
+                Customer Delivery Fee
+            </label>
+
+            <input
+                type="number"
+                id="checkoutDeliveryFee"
+                min="0"
+                step="0.01"
+                value="0"
+                placeholder="Example: 5">
+
+            <small style="color:var(--text-muted);">
+                This same amount is paid to the courier, so it is not profit.
+            </small>
+
+        </div>
+
+
+        <!-- QR -->
+
+        <div
+            style="
+                background:#f9fafb;
+                border:1px solid #e5e7eb;
+                border-radius:10px;
+                padding:12px;
+                margin-bottom:15px;
+            ">
+
+            <h4 style="margin-top:0;">
+                Tracking Number
+            </h4>
+
+
+            <input
+                type="text"
+                id="checkoutTracking"
+                placeholder="Scan the tracking QR code"
+                style="width:100%; box-sizing:border-box; margin-bottom:8px;">
+
+
+            <button
+                type="button"
+                onclick="openQrScanner()"
+                style="
+                    width:100%;
+                    padding:10px;
+                    border:none;
+                    border-radius:7px;
+                    background:#111827;
+                    color:white;
+                    font-weight:bold;
+                    cursor:pointer;
+                ">
+
+                📷 Scan Tracking QR Code
+
+            </button>
+
+        </div>
+
+
+        <!-- SUMMARY -->
+
+        <div
+            style="
+                background:#f3f4f6;
+                border-radius:10px;
+                padding:15px;
+                margin-bottom:15px;
+            ">
+
+            <h4 style="margin-top:0;">
+                Order Summary
+            </h4>
+
+
+            <div
+                style="
+                    display:flex;
+                    justify-content:space-between;
+                    margin-bottom:7px;
+                ">
+
+                <span>
+                    Total Buying Cost
+                </span>
+
+                <strong id="checkoutCost">
+                    $0.00
+                </strong>
+
+            </div>
+
+
+            <div
+                style="
+                    display:flex;
+                    justify-content:space-between;
+                    margin-bottom:7px;
+                ">
+
+                <span>
+                    Selling Price
+                </span>
+
+                <strong id="checkoutSell">
+                    $0.00
+                </strong>
+
+            </div>
+
+
+            <div
+                style="
+                    display:flex;
+                    justify-content:space-between;
+                    margin-bottom:7px;
+                ">
+
+                <span>
+                    Delivery Fee
+                </span>
+
+                <strong id="checkoutDelivery">
+                    $0.00
+                </strong>
+
+            </div>
+
+
+            <hr>
+
+
+            <div
+                style="
+                    display:flex;
+                    justify-content:space-between;
+                    margin-bottom:7px;
+                ">
+
+                <strong>
+                    Customer Pays
+                </strong>
+
+                <strong id="checkoutCustomerTotal">
+                    $0.00
+                </strong>
+
+            </div>
+
+
+            <div
+                style="
+                    display:flex;
+                    justify-content:space-between;
+                ">
+
+                <strong>
+                    Expected Profit
+                </strong>
+
+                <strong
+                    id="checkoutProfit"
+                    style="color:var(--success);">
+
+                    $0.00
+
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <button
+            type="button"
+            onclick="createCheckoutOrder()"
+            id="createOrderBtn"
+            style="
+                width:100%;
+                padding:13px;
+                border:none;
+                border-radius:8px;
+                background:var(--success);
+                color:white;
+                font-size:1rem;
+                font-weight:bold;
+                cursor:pointer;
+            ">
+
+            Create Order
+
+        </button>
+
+
+        <p
+            id="checkoutStatus"
+            style="text-align:center;">
+        </p>
+
+    </div>
+
+
+    <!-- ORDERS -->
+
+    <div class="panel">
+
+        <h3>
+            Orders
+        </h3>
+
+        <button
+            type="button"
+            onclick="openReturnScanner()"
+            style="
+                width:100%;
+                margin-bottom:12px;
+                padding:10px;
+                border:none;
+                border-radius:7px;
+                background:#7c3aed;
+                color:white;
+                font-weight:bold;
+                cursor:pointer;
+            ">
+
+            📷 Scan Returned Packages (Continuous)
+
+        </button>
+
+        <div
+            id="ordersList"
+            style="
+                display:flex;
+                flex-direction:column;
+                gap:10px;
+            ">
+
+            <small style="color:var(--text-muted);">
+                No orders yet.
+            </small>
+
+        </div>
+
+    </div>
 
 </div>
 
 
+<!-- QR SCANNER MODAL (single tracking number entry) -->
+
+<div
+    id="qrScannerModal"
+    style="
+        display:none;
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.7);
+        z-index:9999;
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+    ">
+
+    <div
+        style="
+            background:white;
+            width:min(500px,100%);
+            border-radius:12px;
+            padding:15px;
+        ">
+
+        <h3>
+            Scan Tracking QR Code
+        </h3>
 
 
+        <div
+            id="qrReader"
+            style="width:100%;">
+        </div>
 
 
+        <button
+            type="button"
+            onclick="closeQrScanner()"
+            style="
+                width:100%;
+                margin-top:12px;
+                padding:10px;
+                border:none;
+                border-radius:7px;
+                background:#dc2626;
+                color:white;
+                font-weight:bold;
+                cursor:pointer;
+            ">
 
-<div id="login">
+            Stop Scanner
 
+        </button>
 
-
-
-
-<div class="pin-boxes">
-
-
-
-<input class="pin-box" maxlength="1" inputmode="numeric">
-
-<input class="pin-box" maxlength="1" inputmode="numeric">
-
-<input class="pin-box" maxlength="1" inputmode="numeric">
-
-<input class="pin-box" maxlength="1" inputmode="numeric">
-
-
-
-</div>
-
-
-
-
-
-
-<button onclick="check()">
-
-فتح الملف 🔍
-
-</button>
-
-
-
-
-
-<p id="error"></p>
-
-
-
-
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<div id="content" style="display:none">
-
-
-
-
-
-
-<img src="whatsapp_chat.png" class="case-image">
-
-
-
-<img src="case 002.png" class="case-image">
-
-
-
-
-
+    </div>
 
 </div>
 
 
+<!-- CONTINUOUS RETURN SCANNER MODAL -->
 
+<div
+    id="returnScannerModal"
+    style="
+        display:none;
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.7);
+        z-index:9999;
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+    ">
 
+    <div
+        style="
+            background:white;
+            width:min(500px,100%);
+            border-radius:12px;
+            padding:15px;
+            max-height:90vh;
+            overflow-y:auto;
+        ">
 
+        <h3>
+            Scan Returned Packages
+        </h3>
 
+        <p style="color:var(--text-muted); font-size:0.85rem;">
+            Keep scanning tracking codes one after another. Each
+            matched order is marked <strong>Returned</strong> and
+            its products are restored to stock automatically.
+            Cash and store profit stay based on Delivered orders,
+            so returns won't remove money that was never added.
+        </p>
 
+        <div
+            id="returnQrReader"
+            style="width:100%;">
+        </div>
+
+        <div
+            id="returnScanLog"
+            style="
+                margin-top:12px;
+                display:flex;
+                flex-direction:column;
+                gap:6px;
+                max-height:200px;
+                overflow-y:auto;
+            ">
+        </div>
+
+        <button
+            type="button"
+            onclick="closeReturnScanner()"
+            style="
+                width:100%;
+                margin-top:12px;
+                padding:10px;
+                border:none;
+                border-radius:7px;
+                background:#dc2626;
+                color:white;
+                font-weight:bold;
+                cursor:pointer;
+            ">
+
+            Stop Scanning
+
+        </button>
+
+    </div>
 
 </div>
 
 
+<!-- QR LIBRARY -->
 
+<script src="https://unpkg.com/html5-qrcode"></script>
+    </div>
 
 
+    <!-- ========================================= -->
+    <!-- PROFILE MODAL -->
+    <!-- ========================================= -->
 
+    <div
+        id="profileModal"
+        class="modal"
+        style="display:none;">
 
+        <div class="modal-content">
 
+            <span
+                class="close-btn"
+                onclick="closeModal()">
 
-<script>
+                &times;
 
+            </span>
 
+            <h3 id="modalTitle">
+                Profile Transactions
+            </h3>
 
+            <div id="modalActionContainer"></div>
 
-let boxes = document.querySelectorAll(".pin-box");
+            <ul id="modalHistoryList"></ul>
 
+        </div>
 
+    </div>
 
 
+    <!-- ========================================= -->
+    <!-- PRODUCT MODAL -->
+    <!-- ========================================= -->
 
+    <div
+        id="productModal"
+        class="modal"
+        style="display:none;">
 
-boxes.forEach((box,index)=>{
+        <div class="modal-content">
 
+            <span
+                class="close-btn"
+                onclick="closeProductModal()">
 
+                &times;
 
+            </span>
 
+            <h3 id="productModalTitle">
+                Add Product
+            </h3>
 
-box.addEventListener("input",()=>{
 
+            <form
+                id="productForm"
+                onsubmit="submitProduct(event)">
 
+                <input
+                    type="hidden"
+                    id="editProductId">
 
 
+                <div class="form-group">
 
-if(box.value && index < boxes.length-1){
+                    <label>
+                        Product Name
+                    </label>
 
+                    <input
+                        type="text"
+                        id="prodName"
+                        required>
 
-boxes[index+1].focus();
+                </div>
 
 
-}
+                <div class="form-group">
 
+                    <label>
+                        Cost Price ($)
+                    </label>
 
+                    <input
+                        type="number"
+                        id="prodCost"
+                        step="0.01"
+                        required>
 
+                </div>
 
 
-if(index===3){
+                <button
+                    type="submit"
+                    style="
+                        width:100%;
+                        padding:10px;
+                        background:var(--primary);
+                        color:white;
+                        border:none;
+                        border-radius:6px;
+                        font-weight:bold;
+                        cursor:pointer;
+                    ">
 
+                    Save Product
 
-check();
+                </button>
 
+            </form>
 
-}
+        </div>
 
+    </div>
 
 
+    <!-- ========================================= -->
+    <!-- AD MODAL -->
+    <!-- ========================================= -->
 
+    <div
+        id="adModal"
+        class="modal"
+        style="display:none;">
 
-});
+        <div class="modal-content">
 
+            <span
+                class="close-btn"
+                onclick="closeAdModal()">
 
+                &times;
 
+            </span>
 
 
+            <h3>
+                Add Ad Expense
+            </h3>
 
 
+            <form
+                id="adForm"
+                onsubmit="submitAd(event)">
 
+                <div class="form-group">
 
-box.addEventListener("keydown",(e)=>{
+                    <label>
+                        Amount ($)
+                    </label>
 
+                    <input
+                        type="number"
+                        id="adAmount"
+                        step="0.01"
+                        required>
 
+                </div>
 
 
+                <div class="form-group">
 
-if(e.key==="Backspace" && !box.value && index>0){
+                    <label>
+                        Notes
+                    </label>
 
+                    <input
+                        type="text"
+                        id="adNotes"
+                        placeholder="Campaign name...">
 
-boxes[index-1].focus();
+                </div>
 
 
-}
+                <button
+                    type="submit"
+                    style="
+                        width:100%;
+                        padding:10px;
+                        background:var(--primary);
+                        color:white;
+                        border:none;
+                        border-radius:6px;
+                        font-weight:bold;
+                        cursor:pointer;
+                    ">
 
+                    Submit Ad Spend
 
+                </button>
 
+            </form>
 
+        </div>
 
-});
+    </div>
 
-
-
-
-
-
-});
-
-
-
-
-
-
-
-
-
-function check(){
-
-
-
-
-
-let pin="";
-
-
-
-
-
-
-boxes.forEach(box=>{
-
-
-pin += box.value;
-
-
-});
-
-
-
-
-
-
-
-if(pin==="8519"){
-
-
-
-
-
-document.getElementById("login").style.display="none";
-
-
-
-document.querySelector(".subtitle").style.display="none";
-
-
-
-document.getElementById("content").style.display="block";
-
-
-
-
-
-
-}
-
-else if(pin.length===4){
-
-
-
-
-
-document.getElementById("error").innerHTML=
-
-"PIN خاطئ ❌";
-
-
-
-
-
-boxes.forEach(box=>box.value="");
-
-
-
-boxes[0].focus();
-
-
-
-
-
-}
-
-
-
-
-
-
-}
-
-
-
-
-
-
-
-boxes[0].focus();
-
-
-
-
-
-
-</script>
-
-
-
-
-
-
+    <script src="app.js"></script>
 
 </body>
-
-
 </html>

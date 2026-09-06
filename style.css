@@ -1,834 +1,384 @@
-a
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+:root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --success: #10b981;
+    --danger: #ef4444;
 }
 
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f4f5f7;
-    color: #111827;
-    min-height: 100vh;
-}
-
-/* =====================================================
-   LOGIN
-===================================================== */
-
-#loginPage {
-    min-height: 100vh;
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding: 20px;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 20px;
 }
 
-.login-box {
+.page { display: none; width: 100%; max-width: 600px; }
+.page.active { display: flex; flex-direction: column; gap: 20px; }
+
+.section-content { display: none; flex-direction: column; gap: 20px; }
+.section-content.active { display: flex; }
+
+#userSelectPage { height: 80vh; justify-content: center; align-items: center; }
+.card-container { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; width: 100%; max-width: 400px; }
+.user-buttons { display: flex; gap: 15px; margin-top: 20px; }
+.user-btn { flex: 1; padding: 15px; font-size: 1.2rem; font-weight: bold; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.user-btn:hover { background: var(--primary-hover); }
+
+.navbar { background: white; padding: 12px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+.switch-btn { background: #e5e7eb; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+.tabs { display: flex; gap: 8px; }
+.tab-btn { flex: 1; padding: 12px; border: none; background: #e5e7eb; border-radius: 8px; font-weight: 600; cursor: pointer; color: var(--text-muted); }
+.tab-btn.active { background: var(--primary); color: white; }
+
+.panel { background: var(--card-bg); padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.03); }
+.dashboard-grid { display: flex; gap: 10px; }
+.card { flex: 1; background: #eef2ff; padding: 12px; border-radius: 12px; text-align: center; }
+.card h3 { margin: 0 0 4px 0; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+.card p { margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+
+.highlight-card { background: #ecfdf5 !important; border: 1px solid #10b981; }
+.highlight-card p { color: var(--success) !important; }
+
+.profiles-grid { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; }
+.profile-card { flex: 1; min-width: 130px; background: #f9fafb; border: 1px solid #e5e7eb; padding: 14px; border-radius: 10px; text-align: center; cursor: pointer; transition: 0.2s; }
+.profile-card:hover { border-color: var(--primary); background: #f0fdf4; }
+.profile-card h4 { margin: 0 0 5px 0; font-size: 0.95rem; }
+.profile-card p { margin: 0; font-size: 1.3rem; font-weight: bold; color: var(--text-main); }
+.profile-card small { color: var(--text-muted); font-size: 0.75rem; }
+
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.85rem; }
+.form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; box-sizing: border-box; }
+button[type="submit"] { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+li { padding: 12px; border-radius: 8px; background: #f9fafb; border-left: 4px solid #d1d5db; display: flex; flex-direction: column; gap: 4px; }
+li.add { border-left-color: var(--success); }
+li.remove { border-left-color: var(--danger); }
+li small { color: var(--text-muted); }
+
+.cancel-btn {
+    background-color: var(--danger);
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 4px;
+    align-self: flex-start;
+}
+.cancel-btn:hover { opacity: 0.85; }
+
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 100; }
+.modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; position: relative; }
+.close-btn { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; }
+.text-center { text-align: center; }
+/* =========================================================
+   CHECKOUT
+========================================================= */
+
+.checkout-panel {
+    max-width: 1000px;
+    margin: 0 auto 20px auto;
+}
+
+.checkout-product-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr;
+    gap: 12px;
+}
+
+.checkout-money-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.checkout-add-product {
     width: 100%;
-    max-width: 420px;
-    background: white;
-    padding: 40px;
-    border-radius: 24px;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.08);
-    text-align: center;
+    padding: 11px;
+    border: none;
+    border-radius: 8px;
+    background: var(--primary);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 15px;
 }
 
-.login-box h1 {
-    font-size: 32px;
+.checkout-items-section {
+    margin-top: 10px;
+}
+
+.checkout-items-section h4 {
     margin-bottom: 10px;
 }
 
-.login-box p {
-    color: #6b7280;
-    margin-bottom: 30px;
-}
-
-.user-buttons {
+.checkout-items {
     display: flex;
-    gap: 15px;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.user-button {
-    flex: 1;
-    border: none;
-    padding: 22px;
-    border-radius: 16px;
-    background: #111827;
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.user-button:hover {
-    transform: translateY(-3px);
-    background: #000;
-}
-
-/* =====================================================
-   APP
-===================================================== */
-
-#appPage {
-    display: none;
-    max-width: 950px;
-    margin: auto;
-    padding: 25px 18px 50px;
-}
-
-/* =====================================================
-   VIEWS
-===================================================== */
-
-#trackerView,
-#debtView,
-#debtPersonView,
-#privateUserView {
-    display: none;
-}
-
-#trackerView {
-    display: block;
-}
-
-/* =====================================================
-   HEADER
-===================================================== */
-
-.header {
+.checkout-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
-}
-
-.header h1 {
-    font-size: 26px;
-}
-
-.user-badge {
-    background: white;
-    padding: 10px 16px;
-    border-radius: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-    font-weight: bold;
-}
-
-/* =====================================================
-   USER PRIVATE SUMMARY
-===================================================== */
-
-.user-summary {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 15px;
-    margin-bottom: 20px;
-}
-
-.profile-card {
-    background: white;
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.profile-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.09);
-}
-
-.profile-card:active {
-    transform: scale(0.99);
-}
-
-.profile-top {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 18px;
-}
-
-.profile-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #111827;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.profile-name {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.profile-label {
-    color: #9ca3af;
-    font-size: 12px;
-    margin-top: 3px;
-}
-
-.profile-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-.profile-stat {
-    background: #f9fafb;
     padding: 12px;
-    border-radius: 12px;
-}
-
-.profile-stat-label {
-    color: #6b7280;
-    font-size: 12px;
-    margin-bottom: 5px;
-}
-
-.profile-stat-value {
-    font-weight: bold;
-    font-size: 16px;
-}
-
-.profile-stat-value.spent {
-    color: #dc2626;
-}
-
-.profile-stat-value.added {
-    color: #16a34a;
-}
-
-/* =====================================================
-   BALANCE
-===================================================== */
-
-.balance-card {
-    background: #111827;
-    color: white;
-    border-radius: 25px;
-    padding: 35px;
-    margin-bottom: 20px;
-    cursor: pointer;
-    transition: 0.2s;
-    position: relative;
-}
-
-.balance-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-}
-
-.balance-card:active {
-    transform: scale(0.99);
-}
-
-.balance-label {
-    color: #9ca3af;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.balance {
-    font-size: 48px;
-    font-weight: bold;
-    margin-top: 8px;
-}
-
-.balance-hint {
-    margin-top: 10px;
-    color: #9ca3af;
-    font-size: 12px;
-}
-
-/* =====================================================
-   ACTIONS
-===================================================== */
-
-.actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.action-button {
-    border: none;
-    border-radius: 18px;
-    padding: 20px;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.action-button:hover {
-    transform: translateY(-2px);
-}
-
-.add-button {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.remove-button {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-/* =====================================================
-   FORM
-===================================================== */
-
-.form-card {
-    display: none;
-    background: white;
-    padding: 25px;
-    border-radius: 22px;
-    margin-bottom: 25px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-}
-
-.form-card h2 {
-    margin-bottom: 20px;
-}
-
-.form-group {
-    margin-bottom: 16px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 7px;
-    font-weight: bold;
-}
-
-input,
-textarea,
-select {
-    width: 100%;
-    border: 1px solid #d1d5db;
-    padding: 13px;
-    border-radius: 12px;
-    font-size: 16px;
-    outline: none;
-    font-family: inherit;
-    background: white;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-    border-color: #111827;
-}
-
-textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-.form-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.submit-button,
-.cancel-button {
-    border: none;
-    padding: 14px 20px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 15px;
-}
-
-.submit-button {
-    background: #111827;
-    color: white;
-    flex: 1;
-}
-
-.cancel-button {
-    background: #e5e7eb;
-}
-
-/* =====================================================
-   FILTERS
-===================================================== */
-
-.filters-card {
-    background: white;
-    padding: 20px;
-    border-radius: 22px;
-    margin-bottom: 20px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-}
-
-.filters-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 15px;
-}
-
-.filters {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-}
-
-.filter-group label {
-    display: block;
-    font-size: 12px;
-    color: #6b7280;
-    font-weight: bold;
-    margin-bottom: 6px;
-}
-
-.clear-filters {
-    border: none;
-    background: #f3f4f6;
-    padding: 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    width: 100%;
-}
-
-/* =====================================================
-   HISTORY
-===================================================== */
-
-.history-card {
-    background: white;
-    border-radius: 22px;
-    padding: 25px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-}
-
-.history-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.history-title h2 {
-    font-size: 21px;
-}
-
-.refresh-button {
-    border: none;
-    background: #f3f4f6;
-    padding: 9px 13px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 18px;
-}
-
-.refresh-button:disabled {
-    opacity: 0.5;
-    cursor: wait;
-}
-
-/* =====================================================
-   TRANSACTION
-===================================================== */
-
-.transaction {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 16px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.transaction:last-child {
-    border-bottom: none;
-}
-
-.transaction-icon {
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    font-size: 20px;
-}
-
-.transaction-icon.add {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.transaction-icon.remove {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.transaction-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.transaction-main {
-    font-weight: bold;
-    word-break: break-word;
-}
-
-.transaction-sub {
-    color: #6b7280;
-    font-size: 13px;
-    margin-top: 4px;
-    word-break: break-word;
-}
-
-.transaction-amount {
-    font-weight: bold;
-    white-space: nowrap;
-}
-
-.transaction-amount.add {
-    color: #16a34a;
-}
-
-.transaction-amount.remove {
-    color: #dc2626;
-}
-
-/* =====================================================
-   UNDO
-===================================================== */
-
-.undo-button {
-    border: none;
-    background: #f3f4f6;
-    color: #374151;
-    padding: 8px 11px;
-    border-radius: 9px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: bold;
-    white-space: nowrap;
-}
-
-.undo-button:hover {
-    background: #e5e7eb;
-}
-
-.undo-time {
-    font-size: 11px;
-    color: #9ca3af;
-    margin-top: 4px;
-    text-align: right;
-}
-
-/* =====================================================
-   SHARED DETAIL PAGE
-===================================================== */
-
-.detail-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.back-button {
-    border: none;
-    background: white;
-    width: 45px;
-    height: 45px;
-    border-radius: 13px;
-    font-size: 22px;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-}
-
-.back-button:hover {
     background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
 }
 
-.detail-header-text h1 {
-    font-size: 27px;
+.checkout-item > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
-.detail-header-text p {
-    color: #6b7280;
-    font-size: 14px;
-    margin-top: 4px;
+.checkout-item small {
+    color: var(--text-muted);
 }
 
-/* =====================================================
-   DEBT PAGE
-===================================================== */
-
-.debt-total-card {
-    background: #111827;
+.checkout-remove-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    background: var(--danger);
     color: white;
-    border-radius: 25px;
-    padding: 30px;
-    margin-bottom: 20px;
-}
-
-.debt-total-label {
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 13px;
-}
-
-.debt-total {
-    font-size: 38px;
-    font-weight: bold;
-    margin-top: 8px;
-}
-
-.debt-person {
-    background: white;
-    border-radius: 22px;
-    padding: 22px;
-    margin-bottom: 15px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
     cursor: pointer;
-    transition: 0.2s;
 }
 
-.debt-person:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.09);
-}
-
-.debt-person:active {
-    transform: scale(0.99);
-}
-
-.debt-person-top {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 18px;
-}
-
-.debt-person-icon {
-    width: 52px;
-    height: 52px;
-    min-width: 52px;
-    border-radius: 50%;
-    background: #111827;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 19px;
-}
-
-.debt-person-name {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.debt-person-status {
-    margin-top: 4px;
-    font-size: 13px;
-    color: #6b7280;
-}
-
-.debt-amount {
-    margin-left: auto;
-    text-align: right;
-}
-
-.debt-amount-number {
-    font-size: 21px;
-    font-weight: bold;
-}
-
-.debt-amount-number.receive {
-    color: #16a34a;
-}
-
-.debt-amount-number.give {
-    color: #dc2626;
-}
-
-.debt-amount-number.settled {
-    color: #6b7280;
-}
-
-.debt-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-.debt-stat {
-    background: #f9fafb;
-    padding: 13px;
-    border-radius: 12px;
-}
-
-.debt-stat-label {
-    font-size: 12px;
-    color: #6b7280;
-    margin-bottom: 5px;
-}
-
-.debt-stat-value {
-    font-weight: bold;
-}
-
-.debt-stat-value.added {
-    color: #16a34a;
-}
-
-.debt-stat-value.removed {
-    color: #dc2626;
-}
-
-.debt-empty {
-    background: white;
-    padding: 40px 20px;
-    border-radius: 22px;
-    text-align: center;
-    color: #9ca3af;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
-}
-
-/* =====================================================
-   DETAIL SUMMARY
-===================================================== */
-
-.detail-summary {
+.checkout-summary {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin-top: 15px;
 }
 
-.detail-stat-card {
-    background: white;
-    padding: 18px;
-    border-radius: 18px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.05);
+.checkout-summary > div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 13px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
 }
 
-.detail-stat-label {
-    color: #6b7280;
-    font-size: 12px;
-    margin-bottom: 7px;
+.checkout-summary span {
+    color: var(--text-muted);
+    font-size: 0.85rem;
 }
 
-.detail-stat-value {
-    font-size: 19px;
-    font-weight: bold;
+.checkout-summary strong {
+    font-size: 1.15rem;
 }
 
-.detail-stat-value.green {
-    color: #16a34a;
+.checkout-tracking {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 10px;
+    margin-top: 15px;
 }
 
-.detail-stat-value.red {
-    color: #dc2626;
-}
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-.status {
-    text-align: center;
-    font-size: 13px;
-    color: #9ca3af;
-    margin-top: 12px;
-}
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-.logout {
-    display: block;
-    margin: 20px auto 0;
+.scan-qr-btn {
+    padding: 10px 15px;
     border: none;
-    background: transparent;
-    color: #6b7280;
+    border-radius: 8px;
+    background: #111827;
+    color: white;
     cursor: pointer;
-    font-size: 14px;
+    height: 42px;
 }
 
-/* =====================================================
+.checkout-submit-btn {
+    width: 100%;
+    margin-top: 15px;
+    padding: 13px;
+    border: none;
+    border-radius: 8px;
+    background: var(--success);
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.checkout-submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.checkout-empty {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.qr-reader {
+    width: 100%;
+    max-width: 500px;
+    margin: 15px auto 0 auto;
+}
+
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.order-card {
+    padding: 15px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+
+.order-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.order-card-header div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.order-card-header small {
+    color: var(--text-muted);
+}
+
+.order-status {
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    background: #e5e7eb;
+}
+
+.order-status.delivered {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.order-status.waiting {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.order-status.waiting-for-return {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.order-status.returned {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.order-status.cancelled {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.order-card-body {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.order-card-body > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.order-card-body strong {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.order-card-body span {
+    word-break: break-word;
+}
+
+.order-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.order-actions button {
+    border: none;
+    border-radius: 7px;
+    padding: 8px 12px;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+}
+
+.order-actions .danger-button {
+    background: var(--danger);
+}
+
+
+/* =========================================================
    MOBILE
-===================================================== */
+========================================================= */
 
 @media (max-width: 700px) {
 
-    .filters {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .user-summary {
+    .checkout-product-row {
         grid-template-columns: 1fr;
     }
 
-    .detail-summary {
-        grid-template-columns: 1fr 1fr;
-    }
-
-}
-
-@media (max-width: 600px) {
-
-    .actions {
+    .checkout-money-grid {
         grid-template-columns: 1fr;
     }
 
-    .balance {
-        font-size: 38px;
+    .checkout-summary {
+        grid-template-columns: 1fr;
     }
 
-    .balance-card {
-        padding: 28px;
+    .checkout-tracking {
+        grid-template-columns: 1fr;
     }
 
-    .login-box {
-        padding: 30px 20px;
-    }
-
-    .transaction {
-        gap: 9px;
-        align-items: flex-start;
-    }
-
-    .transaction-amount {
-        font-size: 14px;
-    }
-
-    .debt-person-top {
-        align-items: flex-start;
-        flex-wrap: wrap;
-    }
-
-    .debt-amount {
-        margin-left: 0;
+    .scan-qr-btn {
         width: 100%;
-        text-align: left;
     }
 
-    .detail-summary {
+    .checkout-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .checkout-item > div:last-child {
+        justify-content: space-between;
+        display: flex;
+    }
+
+    .order-card-body {
         grid-template-columns: 1fr;
     }
 
