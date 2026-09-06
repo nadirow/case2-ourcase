@@ -1,35 +1,262 @@
-const API_URL =
-    "https://script.google.com/macros/s/AKfycbyC-Z_-e5pZqnxeLJtodrA-E6anWk4QA8axp7QHdN60GsBhDb9DqOu5-5zpylWyaJTLwQ/exec";
+/* =========================================================
+   ECOTRACK - FIREBASE VERSION
+========================================================= */
+
+import {
+    db,
+    ensureFirebaseAuth
+} from "./firebase.js";
+
+import {
+    collection,
+    doc,
+    getDocs,
+    getDoc,
+    addDoc,
+    setDoc,
+    updateDoc,
+    deleteDoc,
+    query,
+    where,
+    runTransaction,
+    writeBatch
+} from
+    "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+
+/* =========================================================
+   COLLECTIONS
+========================================================= */
+
+const COLLECTIONS = {
+    transactions: "transactions",
+    stores: "stores",
+    products: "products",
+    ads: "ads",
+    orders: "orders",
+    orderItems: "orderItems"
+};
+
+
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
 
 let currentUser = null;
+
+let firebaseUser = null;
 
 let allTransactions = [];
 let allStores = [];
 let allProducts = [];
 let allAds = [];
 let allOrders = [];
+let allOrderItems = [];
+
 let activeStoreId = null;
+
+let checkoutItems = [];
+
+let qrScanner = null;
+
+let returnScanner = null;
+
+const returnScanCooldown = new Map();
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function nowISO() {
+    return new Date().toISOString();
+}
+
+
+function makeId(prefix = "") {
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID === "function"
+    ) {
+        return prefix +
+            window.crypto.randomUUID();
+    }
+
+    return prefix +
+        Date.now() +
+        "-" +
+        Math.random()
+            .toString(36)
+            .substring(2, 10);
+}
+
+
+function number(value) {
+
+    const n = parseFloat(value);
+
+    return Number.isFinite(n)
+        ? n
+        : 0;
+}
+
+
+function cleanString(value) {
+
+    return String(
+        value === undefined ||
+        value === null
+            ? ""
+            : value
+    ).trim();
+}
+
+
+function escapeHtml(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "";
+    }
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+function escapeJs(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "";
+    }
+
+    return String(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r");
+}
+
+
+function parseAttributes(product) {
+
+    if (!product) {
+        return {};
+    }
+
+    if (
+        product.Attributes &&
+        typeof product.Attributes === "object"
+    ) {
+        return {
+            ...product.Attributes
+        };
+    }
+
+    try {
+
+        return JSON.parse(
+            product.Attributes || "{}"
+        );
+
+    } catch (error) {
+
+        return {};
+    }
+}
+
+
+function getProductTotalQty(product) {
+
+    const directQty =
+        parseFloat(product?.Qty);
+
+    if (!isNaN(directQty)) {
+        return directQty;
+    }
+
+    const attributes =
+        parseAttributes(product);
+
+    return Object.values(attributes)
+        .reduce(
+            (total, value) =>
+                total + number(value),
+            0
+        );
+}
+
+
+function dataFromSnapshot(snapshot) {
+
+    return snapshot.docs.map(item => ({
+        ...item.data(),
+        _id: item.id
+    }));
+}
+
+
+function transactionToObject(data, id) {
+
+    return {
+        ...data,
+        _id: id
+    };
+}
+
+
+async function requireAuth() {
+
+    firebaseUser =
+        await ensureFirebaseAuth();
+
+    if (!firebaseUser) {
+        throw new Error(
+            "Firebase authentication failed."
+        );
+    }
+
+    return firebaseUser;
+}
 
 
 /* =========================================================
    USER
 ========================================================= */
 
-function selectUser(user) {
+async function selectUser(user) {
 
     currentUser = user;
 
-    document.getElementById("navUser").innerText = user;
+    const navUser =
+        document.getElementById("navUser");
+
+    if (navUser) {
+        navUser.innerText = user;
+    }
 
     document
         .getElementById("userSelectPage")
-        .classList.remove("active");
+        ?.classList.remove("active");
 
     document
         .getElementById("mainAppPage")
-        .classList.add("active");
+        ?.classList.add("active");
 
-    loadData();
+    await requireAuth();
+
+    await loadData();
 }
 
 
@@ -39,11 +266,11 @@ function switchUser() {
 
     document
         .getElementById("mainAppPage")
-        .classList.remove("active");
+        ?.classList.remove("active");
 
     document
         .getElementById("userSelectPage")
-        .classList.add("active");
+        ?.classList.add("active");
 }
 
 
@@ -55,40 +282,38 @@ function switchTab(tabName) {
 
     document
         .querySelectorAll(".tab-btn")
-        .forEach(btn => btn.classList.remove("active"));
+        .forEach(btn =>
+            btn.classList.remove("active")
+        );
 
     document
         .querySelectorAll(".section-content")
-        .forEach(sec => sec.classList.remove("active"));
-
+        .forEach(sec =>
+            sec.classList.remove("active")
+        );
 
     const tabId =
         "tab" +
         tabName.charAt(0).toUpperCase() +
         tabName.slice(1);
 
-
     const sectionId =
         "section" +
         tabName.charAt(0).toUpperCase() +
         tabName.slice(1);
 
-
     document
         .getElementById(tabId)
-        .classList.add("active");
+        ?.classList.add("active");
 
     document
         .getElementById(sectionId)
-        .classList.add("active");
-
+        ?.classList.add("active");
 
     if (tabName === "checkout") {
 
         renderCheckoutStores();
-
         renderOrdersList();
-
         updateCheckoutSummary();
     }
 }
@@ -101,27 +326,43 @@ function switchTab(tabName) {
 function handleCategoryChange() {
 
     const category =
-        document.getElementById("category").value;
+        document.getElementById(
+            "category"
+        )?.value;
 
     const profileGroup =
-        document.getElementById("profileGroup");
+        document.getElementById(
+            "profileGroup"
+        );
 
     const profileInput =
-        document.getElementById("profile");
+        document.getElementById(
+            "profile"
+        );
 
     const profileLabel =
-        document.getElementById("profileLabel");
+        document.getElementById(
+            "profileLabel"
+        );
 
+    if (
+        !profileGroup ||
+        !profileInput ||
+        !profileLabel
+    ) {
+        return;
+    }
 
     if (category === "Private") {
 
-        profileGroup.style.display = "block";
+        profileGroup.style.display =
+            "block";
 
         profileLabel.innerText =
             "Private Profile:";
 
         profileInput.value =
-            currentUser;
+            currentUser || "";
 
         profileInput.readOnly = true;
 
@@ -129,7 +370,8 @@ function handleCategoryChange() {
 
     else if (category === "Debt") {
 
-        profileGroup.style.display = "block";
+        profileGroup.style.display =
+            "block";
 
         profileLabel.innerText =
             "Debt Person Name:";
@@ -142,7 +384,8 @@ function handleCategoryChange() {
 
     else {
 
-        profileGroup.style.display = "none";
+        profileGroup.style.display =
+            "none";
 
         profileInput.value = "";
     }
@@ -157,254 +400,459 @@ async function loadData() {
 
     try {
 
-        const response =
-            await fetch(API_URL);
+        await requireAuth();
 
-        const data =
-            await response.json();
+        const [
+            transactionsSnap,
+            storesSnap,
+            productsSnap,
+            adsSnap,
+            ordersSnap,
+            orderItemsSnap
+        ] = await Promise.all([
+
+            getDocs(
+                collection(
+                    db,
+                    COLLECTIONS.transactions
+                )
+            ),
+
+            getDocs(
+                collection(
+                    db,
+                    COLLECTIONS.stores
+                )
+            ),
+
+            getDocs(
+                collection(
+                    db,
+                    COLLECTIONS.products
+                )
+            ),
+
+            getDocs(
+                collection(
+                    db,
+                    COLLECTIONS.ads
+                )
+            ),
+
+            getDocs(
+                collection(
+                    db,
+                    COLLECTIONS.orders
+                )
+            ),
+
+            getDocs(
+                collection(
+                    db,
+                    COLLECTIONS.orderItems
+                )
+            )
+        ]);
 
 
         allTransactions =
-            data.transactions || [];
-
-        allStores =
-            data.stores || [];
-
-        allProducts =
-            data.products || [];
-
-        allAds =
-            data.ads || [];
-
-        allOrders =
-            data.orders || [];
-
-        let totalCash = 0;
-        let totalDebt = 0;
-
-        let privateI = 0;
-        let privateN = 0;
-
-        let debtProfiles = {};
-
-
-        const historyList =
-            document.getElementById("historyList");
-
-        historyList.innerHTML = "";
-
-
-        const now =
-            new Date().getTime();
-
-
-        allTransactions.forEach(row => {
-
-            const amount =
-                parseFloat(row.Amount) || 0;
-
-            const action =
-                row.Action;
-
-            const category =
-                row.Category;
-
-            const profile =
-                row.Profile
-                    ? row.Profile.trim()
-                    : "";
-
-
-            if (category === "Work") {
-
-                if (action === "Add")
-                    totalCash += amount;
-
-                if (action === "Remove")
-                    totalCash -= amount;
-            }
-
-
-            else if (category === "Private") {
-
-                if (action === "Add") {
-
-                    totalCash += amount;
-
-                    if (profile === "I")
-                        privateI += amount;
-
-                    if (profile === "N")
-                        privateN += amount;
-                }
-
-                else if (action === "Remove") {
-
-                    totalCash -= amount;
-
-                    if (profile === "I")
-                        privateI -= amount;
-
-                    if (profile === "N")
-                        privateN -= amount;
-                }
-            }
-
-
-            else if (category === "Debt") {
-
-                if (profile) {
-
-                    if (!debtProfiles[profile])
-                        debtProfiles[profile] = 0;
-
-
-                    if (action === "Add") {
-
-                        totalCash += amount;
-
-                        totalDebt += amount;
-
-                        debtProfiles[profile] += amount;
-                    }
-
-
-                    else if (action === "Remove") {
-
-                        totalCash -= amount;
-
-                        totalDebt -= amount;
-
-                        debtProfiles[profile] -= amount;
-                    }
-                }
-            }
-
-
-            const txTime =
-                new Date(row.Timestamp).getTime();
-
-
-            const diffMinutes =
-                (now - txTime) / (1000 * 60);
-
-
-            let cancelBtnHtml = "";
-
-
-            if (
-                !isNaN(diffMinutes) &&
-                diffMinutes >= 0 &&
-                diffMinutes <= 30
-            ) {
-
-                cancelBtnHtml = `
-                    <button
-                        onclick="cancelTransaction(${row.rowIndex})"
-                        class="cancel-btn">
-
-                        Cancel / Delete
-
-                    </button>
-                `;
-            }
-
-
-            const li =
-                document.createElement("li");
-
-
-            li.className =
-                String(action || "").toLowerCase();
-
-
-            const profileText =
-                profile
-                    ? `(${profile})`
-                    : "";
-
-
-            li.innerHTML = `
-                <strong>
-                    ${escapeHtml(action)}
-                    $${amount.toFixed(2)}
-                </strong>
-
-                <small>
-                    Category:
-                    ${escapeHtml(category)}
-                    ${escapeHtml(profileText)}
-                    |
-                    By:
-                    ${escapeHtml(row.User || "")}
-                    |
-                    ${new Date(row.Timestamp).toLocaleString()}
-                </small>
-
-                ${cancelBtnHtml}
-            `;
-
-
-            historyList.insertBefore(
-                li,
-                historyList.firstChild
+            dataFromSnapshot(
+                transactionsSnap
             );
 
-        });
+        allStores =
+            dataFromSnapshot(
+                storesSnap
+            );
+
+        allProducts =
+            dataFromSnapshot(
+                productsSnap
+            );
+
+        allAds =
+            dataFromSnapshot(
+                adsSnap
+            );
+
+        allOrders =
+            dataFromSnapshot(
+                ordersSnap
+            );
+
+        allOrderItems =
+            dataFromSnapshot(
+                orderItemsSnap
+            );
 
 
         /*
-         * Debt is intentionally subtracted from
-         * cash to calculate net money.
+         * Newest first.
          */
 
-        const totalNetMoney =
-            totalCash - totalDebt;
+        allTransactions.sort(
+            (a, b) =>
+                new Date(
+                    b.Timestamp || 0
+                ) -
+                new Date(
+                    a.Timestamp || 0
+                )
+        );
+
+        allOrders.sort(
+            (a, b) =>
+                new Date(
+                    b.Timestamp || 0
+                ) -
+                new Date(
+                    a.Timestamp || 0
+                )
+        );
 
 
-        document.getElementById("totalCash")
-            .innerText =
-            `$${totalCash.toFixed(2)}`;
-
-
-        document.getElementById("totalDebt")
-            .innerText =
-            `$${totalDebt.toFixed(2)}`;
-
-
-        document.getElementById("totalNetMoney")
-            .innerText =
-            `$${totalNetMoney.toFixed(2)}`;
-
-
-        document.getElementById("privateI")
-            .innerText =
-            `$${privateI.toFixed(2)}`;
-
-
-        document.getElementById("privateN")
-            .innerText =
-            `$${privateN.toFixed(2)}`;
-
-
-        renderDebtProfiles(debtProfiles);
+        calculateMoney();
 
         renderStoresList();
         renderCheckoutStores();
         renderOrdersList();
 
-        if (activeStoreId)
-            renderStoreDetail(activeStoreId);
+        if (activeStoreId) {
+            renderStoreDetail(
+                activeStoreId
+            );
+        }
 
     }
 
     catch (error) {
 
         console.error(
-            "Error loading data:",
+            "Firebase load error:",
             error
         );
+
+        alert(
+            "Could not load Firebase data.\n\n" +
+            error.message
+        );
     }
+}
+
+
+/* =========================================================
+   MONEY CALCULATION
+========================================================= */
+
+function calculateMoney() {
+
+    let totalCash = 0;
+
+    let totalDebt = 0;
+
+    let privateI = 0;
+
+    let privateN = 0;
+
+    const debtProfiles = {};
+
+
+    allTransactions.forEach(row => {
+
+        const amount =
+            number(row.Amount);
+
+        const action =
+            cleanString(row.Action);
+
+        const category =
+            cleanString(row.Category);
+
+        const profile =
+            cleanString(row.Profile);
+
+
+        if (category === "Work") {
+
+            if (action === "Add") {
+                totalCash += amount;
+            }
+
+            if (action === "Remove") {
+                totalCash -= amount;
+            }
+        }
+
+
+        else if (
+            category === "Private"
+        ) {
+
+            if (action === "Add") {
+
+                totalCash += amount;
+
+                if (profile === "I") {
+                    privateI += amount;
+                }
+
+                if (profile === "N") {
+                    privateN += amount;
+                }
+            }
+
+            if (action === "Remove") {
+
+                totalCash -= amount;
+
+                if (profile === "I") {
+                    privateI -= amount;
+                }
+
+                if (profile === "N") {
+                    privateN -= amount;
+                }
+            }
+        }
+
+
+        else if (
+            category === "Debt"
+        ) {
+
+            if (!profile) {
+                return;
+            }
+
+            if (!debtProfiles[profile]) {
+                debtProfiles[profile] = 0;
+            }
+
+            if (action === "Add") {
+
+                /*
+                 * Debt increases cash.
+                 */
+                totalCash += amount;
+
+                /*
+                 * Debt also increases debt.
+                 */
+                totalDebt += amount;
+
+                debtProfiles[profile] +=
+                    amount;
+            }
+
+            if (action === "Remove") {
+
+                totalCash -= amount;
+
+                totalDebt -= amount;
+
+                debtProfiles[profile] -=
+                    amount;
+            }
+        }
+    });
+
+
+    /*
+     * Remove fully settled profiles.
+     */
+
+    Object.keys(debtProfiles)
+        .forEach(name => {
+
+            if (
+                Math.abs(
+                    debtProfiles[name]
+                ) < 0.005
+            ) {
+                delete debtProfiles[name];
+            }
+        });
+
+
+    const totalNetMoney =
+        totalCash - totalDebt;
+
+
+    document.getElementById(
+        "totalCash"
+    )?.replaceChildren(
+        document.createTextNode(
+            `$${totalCash.toFixed(2)}`
+        )
+    );
+
+    document.getElementById(
+        "totalDebt"
+    )?.replaceChildren(
+        document.createTextNode(
+            `$${totalDebt.toFixed(2)}`
+        )
+    );
+
+    document.getElementById(
+        "totalNetMoney"
+    )?.replaceChildren(
+        document.createTextNode(
+            `$${totalNetMoney.toFixed(2)}`
+        )
+    );
+
+    document.getElementById(
+        "privateI"
+    )?.replaceChildren(
+        document.createTextNode(
+            `$${privateI.toFixed(2)}`
+        )
+    );
+
+    document.getElementById(
+        "privateN"
+    )?.replaceChildren(
+        document.createTextNode(
+            `$${privateN.toFixed(2)}`
+        )
+    );
+
+
+    renderTransactionHistory();
+
+    renderDebtProfiles(
+        debtProfiles
+    );
+}
+
+
+/* =========================================================
+   TRANSACTION HISTORY
+========================================================= */
+
+function renderTransactionHistory() {
+
+    const historyList =
+        document.getElementById(
+            "historyList"
+        );
+
+    if (!historyList) {
+        return;
+    }
+
+    historyList.innerHTML = "";
+
+    const now =
+        Date.now();
+
+
+    allTransactions.forEach(row => {
+
+        const amount =
+            number(row.Amount);
+
+        const action =
+            cleanString(row.Action);
+
+        const category =
+            cleanString(row.Category);
+
+        const profile =
+            cleanString(row.Profile);
+
+        const timestamp =
+            row.Timestamp;
+
+        const txTime =
+            new Date(
+                timestamp
+            ).getTime();
+
+        const diffMinutes =
+            (now - txTime) /
+            (1000 * 60);
+
+
+        let cancelBtnHtml = "";
+
+
+        /*
+         * Transaction can be deleted for
+         * 30 minutes after creation.
+         */
+
+        if (
+            !isNaN(diffMinutes) &&
+            diffMinutes >= 0 &&
+            diffMinutes <= 30
+        ) {
+
+            cancelBtnHtml = `
+                <button
+                    onclick="
+                        cancelTransaction(
+                            '${escapeJs(row._id)}'
+                        )
+                    "
+                    class="cancel-btn">
+                    Cancel / Delete
+                </button>
+            `;
+        }
+
+
+        const li =
+            document.createElement("li");
+
+        li.className =
+            action.toLowerCase();
+
+
+        const profileText =
+            profile
+                ? `(${profile})`
+                : "";
+
+
+        li.innerHTML = `
+            <strong>
+                ${escapeHtml(action)}
+                $${amount.toFixed(2)}
+            </strong>
+
+            <small>
+                Category:
+                ${escapeHtml(category)}
+                ${escapeHtml(profileText)}
+                |
+                By:
+                ${escapeHtml(row.User || "")}
+                |
+                ${new Date(
+                    timestamp
+                ).toLocaleString()}
+            </small>
+
+            ${
+                row.Notes
+                    ? `
+                    <small>
+                        ${escapeHtml(
+                            row.Notes
+                        )}
+                    </small>
+                    `
+                    : ""
+            }
+
+            ${cancelBtnHtml}
+        `;
+
+
+        historyList.appendChild(li);
+    });
 }
 
 
@@ -412,13 +860,18 @@ async function loadData() {
    DEBT PROFILES
 ========================================================= */
 
-function renderDebtProfiles(debtProfiles) {
+function renderDebtProfiles(
+    debtProfiles
+) {
 
     const container =
         document.getElementById(
             "debtProfilesContainer"
         );
 
+    if (!container) {
+        return;
+    }
 
     container.innerHTML = "";
 
@@ -436,9 +889,7 @@ function renderDebtProfiles(debtProfiles) {
                     text-align:center;
                     width:100%;
                 ">
-
                 No debt profiles recorded yet.
-
             </small>
         `;
 
@@ -455,13 +906,14 @@ function renderDebtProfiles(debtProfiles) {
         const card =
             document.createElement("div");
 
-
         card.className =
             "profile-card";
 
-
         card.onclick =
-            () => openDebtProfile(name);
+            () =>
+                openDebtProfile(
+                    name
+                );
 
 
         card.innerHTML = `
@@ -472,13 +924,13 @@ function renderDebtProfiles(debtProfiles) {
             <p
                 style="
                     color:
-                    ${balance >= 0
-                        ? "var(--success)"
-                        : "var(--danger)"};
+                    ${
+                        balance >= 0
+                            ? "var(--success)"
+                            : "var(--danger)"
+                    };
                 ">
-
                 $${balance.toFixed(2)}
-
             </p>
 
             <small>
@@ -488,24 +940,29 @@ function renderDebtProfiles(debtProfiles) {
 
 
         container.appendChild(card);
-
     });
 }
 
 
 /* =========================================================
-   PROFILE
+   PRIVATE PROFILE
 ========================================================= */
 
 function openProfile(profileName) {
 
-    document
-        .getElementById("modalActionContainer")
-        .innerHTML = "";
+    const actionContainer =
+        document.getElementById(
+            "modalActionContainer"
+        );
+
+    if (actionContainer) {
+        actionContainer.innerHTML = "";
+    }
 
 
     showModalHistory(
         `Private Transactions for User ${profileName}`,
+
         row =>
             row.Category === "Private" &&
             row.Profile === profileName
@@ -517,12 +974,18 @@ function openProfile(profileName) {
    DEBT PROFILE
 ========================================================= */
 
-function openDebtProfile(profileName) {
+function openDebtProfile(
+    profileName
+) {
 
     const modalActionContainer =
         document.getElementById(
             "modalActionContainer"
         );
+
+    if (!modalActionContainer) {
+        return;
+    }
 
 
     modalActionContainer.innerHTML = `
@@ -580,18 +1043,22 @@ function openDebtProfile(profileName) {
                     id="modalAmount"
                     placeholder="Amount ($)"
                     step="0.01"
+                    min="0"
                     style="
                         flex:1;
                         padding:8px;
                         border-radius:6px;
                         border:1px solid #d1d5db;
                     ">
-
             </div>
 
 
             <button
-                onclick="submitModalDebt('${escapeJs(profileName)}')"
+                onclick="
+                    submitModalDebt(
+                        '${escapeJs(profileName)}'
+                    )
+                "
                 style="
                     width:100%;
                     padding:8px;
@@ -613,33 +1080,33 @@ function openDebtProfile(profileName) {
 
     showModalHistory(
         `Debt Transactions for ${profileName}`,
+
         row =>
             row.Category === "Debt" &&
-            row.Profile &&
-            row.Profile.trim() === profileName
+            cleanString(row.Profile) ===
+                profileName
     );
 }
 
 
-async function submitModalDebt(profileName) {
+async function submitModalDebt(
+    profileName
+) {
 
     const action =
         document.getElementById(
             "modalActionType"
-        ).value;
-
+        )?.value;
 
     const amount =
-        document.getElementById(
-            "modalAmount"
-        ).value;
+        number(
+            document.getElementById(
+                "modalAmount"
+            )?.value
+        );
 
 
-    if (
-        !amount ||
-        isNaN(amount) ||
-        parseFloat(amount) <= 0
-    ) {
+    if (amount <= 0) {
 
         alert(
             "Please enter a valid amount."
@@ -651,41 +1118,27 @@ async function submitModalDebt(profileName) {
 
     try {
 
-        await fetch(API_URL, {
-
-            method: "POST",
-
-            body: JSON.stringify({
-
-                user: currentUser,
-
-                action: action,
-
-                amount: amount,
-
-                category: "Debt",
-
-                profile: profileName
-
-            }),
-
-            headers: {
-                "Content-Type":
-                    "text/plain;charset=utf-8"
-            }
-
-        });
-
+        await addTransaction(
+            currentUser,
+            action,
+            amount,
+            "Debt",
+            profileName,
+            ""
+        );
 
         await loadData();
 
-        openDebtProfile(profileName);
+        openDebtProfile(
+            profileName
+        );
 
     }
 
     catch (error) {
 
         alert(
+            error.message ||
             "Failed to record transaction."
         );
     }
@@ -706,12 +1159,10 @@ function showModalHistory(
             "profileModal"
         );
 
-
     const modalTitle =
         document.getElementById(
             "modalTitle"
         );
-
 
     const modalHistoryList =
         document.getElementById(
@@ -719,73 +1170,221 @@ function showModalHistory(
         );
 
 
-    modalTitle.innerText =
-        titleText;
-
-
-    modalHistoryList.innerHTML = "";
-
-
-    const filteredTransactions =
-        allTransactions.filter(
-            filterCondition
-        );
-
-
-    if (filteredTransactions.length === 0) {
-
-        modalHistoryList.innerHTML =
-            "<li>No transactions found for this profile.</li>";
-
-    }
-
-    else {
-
-        filteredTransactions.forEach(row => {
-
-            const li =
-                document.createElement("li");
-
-
-            li.className =
-                String(row.Action || "")
-                    .toLowerCase();
-
-
-            li.innerHTML = `
-                <strong>
-                    ${escapeHtml(row.Action)}
-                    $${(
-                        parseFloat(row.Amount) || 0
-                    ).toFixed(2)}
-                </strong>
-
-                <small>
-                    Done by:
-                    ${escapeHtml(row.User || "")}
-                    |
-                    ${new Date(
-                        row.Timestamp
-                    ).toLocaleString()}
-                </small>
-            `;
-
-
-            modalHistoryList.appendChild(li);
-
-        });
+    if (!modal) {
+        return;
     }
 
 
-    modal.style.display = "flex";
+    if (modalTitle) {
+        modalTitle.innerText =
+            titleText;
+    }
+
+    if (modalHistoryList) {
+
+        modalHistoryList.innerHTML = "";
+
+
+        const filteredTransactions =
+            allTransactions.filter(
+                filterCondition
+            );
+
+
+        if (
+            filteredTransactions.length ===
+            0
+        ) {
+
+            modalHistoryList.innerHTML =
+                "<li>No transactions found for this profile.</li>";
+
+        }
+
+        else {
+
+            filteredTransactions.forEach(
+                row => {
+
+                    const li =
+                        document.createElement(
+                            "li"
+                        );
+
+                    li.className =
+                        cleanString(
+                            row.Action
+                        ).toLowerCase();
+
+
+                    li.innerHTML = `
+                        <strong>
+                            ${escapeHtml(
+                                row.Action
+                            )}
+                            $${number(
+                                row.Amount
+                            ).toFixed(2)}
+                        </strong>
+
+                        <small>
+                            Done by:
+                            ${escapeHtml(
+                                row.User || ""
+                            )}
+                            |
+                            ${new Date(
+                                row.Timestamp
+                            ).toLocaleString()}
+                        </small>
+
+                        ${
+                            row.Notes
+                                ? `
+                                <small>
+                                    ${escapeHtml(
+                                        row.Notes
+                                    )}
+                                </small>
+                                `
+                                : ""
+                        }
+                    `;
+
+
+                    modalHistoryList
+                        .appendChild(li);
+                }
+            );
+        }
+    }
+
+
+    modal.style.display =
+        "flex";
 }
 
 
 function closeModal() {
 
-    document.getElementById(
-        "profileModal"
-    ).style.display = "none";
+    const modal =
+        document.getElementById(
+            "profileModal"
+        );
+
+    if (modal) {
+        modal.style.display =
+            "none";
+    }
+}
+
+
+/* =========================================================
+   TRANSACTION
+========================================================= */
+
+async function addTransaction(
+    user,
+    action,
+    amount,
+    category,
+    profile = "",
+    notes = ""
+) {
+
+    await requireAuth();
+
+
+    const value =
+        number(amount);
+
+
+    if (
+        value <= 0
+    ) {
+        throw new Error(
+            "Amount must be greater than zero."
+        );
+    }
+
+
+    if (
+        action !== "Add" &&
+        action !== "Remove"
+    ) {
+        throw new Error(
+            "Invalid transaction action."
+        );
+    }
+
+
+    if (
+        category !== "Work" &&
+        category !== "Private" &&
+        category !== "Debt"
+    ) {
+        throw new Error(
+            "Invalid transaction category."
+        );
+    }
+
+
+    if (
+        category === "Private" &&
+        !profile
+    ) {
+        throw new Error(
+            "Private profile is required."
+        );
+    }
+
+
+    if (
+        category === "Debt" &&
+        !profile
+    ) {
+        throw new Error(
+            "Debt person's name is required."
+        );
+    }
+
+
+    const transactionId =
+        makeId("TX-");
+
+
+    await setDoc(
+        doc(
+            db,
+            COLLECTIONS.transactions,
+            transactionId
+        ),
+        {
+            Timestamp:
+                nowISO(),
+
+            User:
+                user || "",
+
+            Action:
+                action,
+
+            Amount:
+                value,
+
+            Category:
+                category,
+
+            Profile:
+                profile || "",
+
+            Notes:
+                notes || ""
+        }
+    );
+
+
+    return transactionId;
 }
 
 
@@ -793,7 +1392,9 @@ function closeModal() {
    DELETE TRANSACTION
 ========================================================= */
 
-async function cancelTransaction(rowIndex) {
+async function cancelTransaction(
+    transactionId
+) {
 
     if (
         !confirm(
@@ -806,22 +1407,59 @@ async function cancelTransaction(rowIndex) {
 
     try {
 
-        await fetch(API_URL, {
+        await requireAuth();
 
-            method: "POST",
 
-            body: JSON.stringify({
-                actionType:
-                    "delete_transaction",
-                rowIndex: rowIndex
-            }),
+        const txRef =
+            doc(
+                db,
+                COLLECTIONS.transactions,
+                transactionId
+            );
 
-            headers: {
-                "Content-Type":
-                    "text/plain;charset=utf-8"
-            }
 
-        });
+        const txSnap =
+            await getDoc(txRef);
+
+
+        if (!txSnap.exists()) {
+            throw new Error(
+                "Transaction not found."
+            );
+        }
+
+
+        const tx =
+            txSnap.data();
+
+
+        const created =
+            new Date(
+                tx.Timestamp
+            ).getTime();
+
+
+        const ageMinutes =
+            (
+                Date.now() -
+                created
+            ) /
+            (1000 * 60);
+
+
+        if (
+            ageMinutes < 0 ||
+            ageMinutes > 30
+        ) {
+            throw new Error(
+                "This transaction can only be deleted within 30 minutes."
+            );
+        }
+
+
+        await deleteDoc(
+            txRef
+        );
 
 
         await loadData();
@@ -831,6 +1469,7 @@ async function cancelTransaction(rowIndex) {
     catch (error) {
 
         alert(
+            error.message ||
             "Failed to delete transaction."
         );
     }
@@ -841,9 +1480,19 @@ async function cancelTransaction(rowIndex) {
    MONEY FORM
 ========================================================= */
 
-document
-    .getElementById("transactionForm")
-    .addEventListener(
+function setupMoneyForm() {
+
+    const form =
+        document.getElementById(
+            "transactionForm"
+        );
+
+    if (!form) {
+        return;
+    }
+
+
+    form.addEventListener(
         "submit",
         async function(e) {
 
@@ -855,17 +1504,17 @@ document
                     "submitBtn"
                 );
 
-
             const status =
                 document.getElementById(
                     "statusMessage"
                 );
 
 
-            btn.disabled = true;
-
-            btn.innerText =
-                "Saving...";
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText =
+                    "Saving...";
+            }
 
 
             const category =
@@ -880,67 +1529,52 @@ document
                 ).value;
 
 
-            if (category === "Private") {
-
+            if (
+                category === "Private"
+            ) {
                 profileVal =
                     currentUser;
             }
 
 
-            const payload = {
-
-                user: currentUser,
-
-                action:
-                    document.getElementById(
-                        "action"
-                    ).value,
-
-                amount:
+            const amount =
+                number(
                     document.getElementById(
                         "amount"
-                    ).value,
-
-                category:
-                    category,
-
-                profile:
-                    profileVal
-
-            };
+                    ).value
+                );
 
 
             try {
 
-                await fetch(API_URL, {
+                await addTransaction(
+                    currentUser,
 
-                    method: "POST",
+                    document.getElementById(
+                        "action"
+                    ).value,
 
-                    body: JSON.stringify(
-                        payload
-                    ),
+                    amount,
 
-                    headers: {
-                        "Content-Type":
-                            "text/plain;charset=utf-8"
-                    }
+                    category,
 
-                });
+                    profileVal,
 
-
-                status.innerText =
-                    "Saved successfully!";
-
-                status.style.color =
-                    "green";
+                    ""
+                );
 
 
-                document
-                    .getElementById(
-                        "transactionForm"
-                    )
-                    .reset();
+                if (status) {
 
+                    status.innerText =
+                        "Saved successfully!";
+
+                    status.style.color =
+                        "green";
+                }
+
+
+                form.reset();
 
                 handleCategoryChange();
 
@@ -950,31 +1584,44 @@ document
 
             catch (error) {
 
-                status.innerText =
-                    "Error saving transaction.";
+                if (status) {
 
-                status.style.color =
-                    "red";
+                    status.innerText =
+                        error.message ||
+                        "Error saving transaction.";
+
+                    status.style.color =
+                        "red";
+                }
+
             }
-
 
             finally {
 
-                btn.disabled = false;
+                if (btn) {
 
-                btn.innerText =
-                    "Save Transaction";
+                    btn.disabled = false;
+
+                    btn.innerText =
+                        "Save Transaction";
+                }
 
 
                 setTimeout(
-                    () =>
-                        status.innerText = "",
+                    () => {
+
+                        if (status) {
+                            status.innerText =
+                                "";
+                        }
+
+                    },
                     3000
                 );
             }
-
         }
     );
+}
 
 
 /* =========================================================
@@ -988,40 +1635,64 @@ async function createStore() {
             "newStoreName"
         );
 
+    if (!nameInput) {
+        return;
+    }
+
 
     const storeName =
         nameInput.value.trim();
 
 
-    if (!storeName)
+    if (!storeName) {
+
+        alert(
+            "Store name is required."
+        );
+
         return;
+    }
 
 
-    await fetch(API_URL, {
+    try {
 
-        method: "POST",
-
-        body: JSON.stringify({
-
-            actionType:
-                "add_store",
-
-            storeName:
-                storeName
-
-        }),
-
-        headers: {
-            "Content-Type":
-                "text/plain;charset=utf-8"
-        }
-
-    });
+        await requireAuth();
 
 
-    nameInput.value = "";
+        const storeId =
+            makeId("STORE-");
 
-    await loadData();
+
+        await setDoc(
+            doc(
+                db,
+                COLLECTIONS.stores,
+                storeId
+            ),
+            {
+                StoreId:
+                    storeId,
+
+                StoreName:
+                    storeName
+            }
+        );
+
+
+        nameInput.value = "";
+
+
+        await loadData();
+
+    }
+
+    catch (error) {
+
+        alert(
+            error.message ||
+            "Failed to create store."
+        );
+    }
 }
 
 
@@ -1032,20 +1703,22 @@ function renderStoresList() {
             "storesContainer"
         );
 
+    if (!container) {
+        return;
+    }
+
 
     container.innerHTML = "";
 
 
-    if (allStores.length === 0) {
+    if (
+        allStores.length === 0
+    ) {
 
         container.innerHTML = `
             <small
-                style="
-                    color:var(--text-muted);
-                ">
-
+                style="color:var(--text-muted);">
                 No stores created yet.
-
             </small>
         `;
 
@@ -1056,7 +1729,9 @@ function renderStoresList() {
     allStores.forEach(store => {
 
         const div =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         div.style.cssText = `
@@ -1081,20 +1756,19 @@ function renderStoresList() {
 
         div.innerHTML = `
             <strong>
-                ${escapeHtml(store.StoreName)}
+                ${escapeHtml(
+                    store.StoreName
+                )}
             </strong>
 
             <small
                 style="color:var(--primary);">
-
                 Manage &rarr;
-
             </small>
         `;
 
 
         container.appendChild(div);
-
     });
 }
 
@@ -1114,11 +1788,21 @@ function openStoreDetail(
         storeName;
 
 
-    document.getElementById(
-        "storesContainer"
-    ).parentElement
-     .style.display =
-        "none";
+    const storesContainer =
+        document.getElementById(
+            "storesContainer"
+        );
+
+
+    if (
+        storesContainer &&
+        storesContainer.parentElement
+    ) {
+
+        storesContainer.parentElement
+            .style.display =
+                "none";
+    }
 
 
     document.getElementById(
@@ -1127,13 +1811,16 @@ function openStoreDetail(
         "block";
 
 
-    renderStoreDetail(storeId);
+    renderStoreDetail(
+        storeId
+    );
 }
 
 
 function backToStores() {
 
-    activeStoreId = null;
+    activeStoreId =
+        null;
 
 
     document.getElementById(
@@ -1142,11 +1829,21 @@ function backToStores() {
         "none";
 
 
-    document.getElementById(
-        "storesContainer"
-    ).parentElement
-     .style.display =
-        "block";
+    const storesContainer =
+        document.getElementById(
+            "storesContainer"
+        );
+
+
+    if (
+        storesContainer &&
+        storesContainer.parentElement
+    ) {
+
+        storesContainer.parentElement
+            .style.display =
+                "block";
+    }
 }
 
 
@@ -1154,17 +1851,23 @@ function backToStores() {
    STORE DETAIL
 ========================================================= */
 
-function renderStoreDetail(storeId) {
+function renderStoreDetail(
+    storeId
+) {
 
     const storeProducts =
         allProducts.filter(
-            p => p.StoreId == storeId
+            p =>
+                String(p.StoreId) ===
+                String(storeId)
         );
 
 
     const storeAdsList =
         allAds.filter(
-            a => a.StoreId == storeId
+            a =>
+                String(a.StoreId) ===
+                String(storeId)
         );
 
 
@@ -1175,93 +1878,73 @@ function renderStoreDetail(storeId) {
     let totalCorruptedLoss = 0;
 
 
-    storeProducts.forEach(p => {
+    storeProducts.forEach(product => {
 
-        let qtyVal =
-            parseFloat(p.Qty);
-
-
-        if (isNaN(qtyVal)) {
-
-            try {
-
-                const attr =
-                    JSON.parse(
-                        p.Attributes || "{}"
-                    );
-
-
-                qtyVal =
-                    Object.values(attr)
-                        .reduce(
-                            (a, b) =>
-                                a +
-                                (parseFloat(b) || 0),
-                            0
-                        );
-
-            }
-
-            catch(e) {
-
-                qtyVal = 0;
-            }
-        }
+        const qty =
+            getProductTotalQty(
+                product
+            );
 
 
         capital +=
-            (parseFloat(p.Cost) || 0) *
-            qtyVal;
+            number(product.Cost) *
+            qty;
+    });
 
 
-        allTransactions.forEach(tx => {
+    allTransactions.forEach(tx => {
 
-            if (
-                tx.Notes &&
-                tx.Notes.includes(
+        if (
+            cleanString(tx.Notes)
+                .includes(
                     "Corrupted Stock Loss"
-                ) &&
-                tx.Notes.includes(p.Name)
-            ) {
+                )
+        ) {
+
+            const matchingProduct =
+                storeProducts.some(
+                    product =>
+                        cleanString(
+                            tx.Notes
+                        ).includes(
+                            cleanString(
+                                product.Name
+                            )
+                        )
+                );
+
+
+            if (matchingProduct) {
 
                 totalCorruptedLoss +=
-                    parseFloat(
-                        tx.Amount
-                    ) || 0;
+                    number(tx.Amount);
             }
-
-        });
-
+        }
     });
 
 
-    storeAdsList.forEach(a => {
+    storeAdsList.forEach(ad => {
 
         totalAdSpend +=
-            parseFloat(a.Amount) || 0;
-
+            number(ad.Amount);
     });
 
-
-    /*
-     * Profit from orders that actually got delivered
-     * for this store. Cash was only added to the Money
-     * tab when an order became Delivered, so this is
-     * the real, realized profit contribution from sales.
-     */
 
     let deliveredOrdersProfit = 0;
 
-    (allOrders || [])
-        .filter(o =>
-            String(o.StoreId) === String(storeId) &&
-            o.Status === "Delivered"
+
+    allOrders
+        .filter(
+            order =>
+                String(order.StoreId) ===
+                    String(storeId) &&
+                order.Status ===
+                    "Delivered"
         )
-        .forEach(o => {
+        .forEach(order => {
 
             deliveredOrdersProfit +=
-                parseFloat(o.Profit) || 0;
-
+                number(order.Profit);
         });
 
 
@@ -1304,17 +1987,22 @@ function renderStoreDetail(storeId) {
         );
 
 
+    if (!prodListContainer) {
+        return;
+    }
+
+
     prodListContainer.innerHTML = "";
 
 
-    if (storeProducts.length === 0) {
+    if (
+        storeProducts.length === 0
+    ) {
 
         prodListContainer.innerHTML = `
             <small
                 style="color:var(--text-muted);">
-
                 No products in this store.
-
             </small>
         `;
 
@@ -1322,236 +2010,227 @@ function renderStoreDetail(storeId) {
     }
 
 
-    storeProducts.forEach(prod => {
+    storeProducts.forEach(
+        prod => {
 
-        let attributesObj = {};
-
-
-        try {
-
-            attributesObj =
-                JSON.parse(
-                    prod.Attributes || "{}"
+            const attributesObj =
+                parseAttributes(
+                    prod
                 );
 
-        }
 
-        catch(e) {}
-
-
-        let attrHtml = "";
+            let attrHtml = "";
 
 
-        for (let key in attributesObj) {
+            Object.keys(
+                attributesObj
+            ).forEach(key => {
 
-            attrHtml += `
+                attrHtml += `
+
+                    <div
+                        style="
+                            display:flex;
+                            justify-content:space-between;
+                            align-items:center;
+                            background:#eef2ff;
+                            padding:6px 10px;
+                            border-radius:6px;
+                            margin-bottom:4px;
+                            font-size:0.85rem;
+                        ">
+
+                        <span>
+
+                            <strong>
+                                ${escapeHtml(
+                                    key
+                                )}
+                            </strong>:
+
+                            ${number(
+                                attributesObj[key]
+                            )}
+
+                        </span>
+
+
+                        <div
+                            style="
+                                display:flex;
+                                gap:4px;
+                            ">
+
+                            <button
+                                onclick="
+                                    adjustVariantInline(
+                                        '${escapeJs(
+                                            prod.ProductId
+                                        )}',
+                                        '${escapeJs(
+                                            key
+                                        )}',
+                                        1,
+                                        'add'
+                                    )
+                                "
+                                style="
+                                    background:var(--success);
+                                    color:white;
+                                    border:none;
+                                    padding:2px 6px;
+                                    border-radius:4px;
+                                    cursor:pointer;
+                                ">
+                                +
+                            </button>
+
+
+                            <button
+                                onclick="
+                                    adjustVariantInline(
+                                        '${escapeJs(
+                                            prod.ProductId
+                                        )}',
+                                        '${escapeJs(
+                                            key
+                                        )}',
+                                        1,
+                                        'reduce'
+                                    )
+                                "
+                                style="
+                                    background:#f59e0b;
+                                    color:white;
+                                    border:none;
+                                    padding:2px 6px;
+                                    border-radius:4px;
+                                    cursor:pointer;
+                                ">
+                                -
+                            </button>
+
+
+                            <button
+                                onclick="
+                                    adjustVariantInline(
+                                        '${escapeJs(
+                                            prod.ProductId
+                                        )}',
+                                        '${escapeJs(
+                                            key
+                                        )}',
+                                        1,
+                                        'loss'
+                                    )
+                                "
+                                style="
+                                    background:var(--danger);
+                                    color:white;
+                                    border:none;
+                                    padding:2px 6px;
+                                    border-radius:4px;
+                                    cursor:pointer;
+                                ">
+                                🗑️
+                            </button>
+
+                        </div>
+
+                    </div>
+                `;
+            });
+
+
+            if (!attrHtml) {
+
+                attrHtml = `
+                    <small
+                        style="
+                            color:var(--text-muted);
+                        ">
+                        No variations added yet.
+                    </small>
+                `;
+            }
+
+
+            const displayQty =
+                getProductTotalQty(
+                    prod
+                );
+
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.style.cssText = `
+                padding:14px;
+                background:#f9fafb;
+                border:1px solid #e5e7eb;
+                border-radius:8px;
+                display:flex;
+                flex-direction:column;
+                gap:10px;
+            `;
+
+
+            card.innerHTML = `
 
                 <div
                     style="
                         display:flex;
                         justify-content:space-between;
-                        align-items:center;
-                        background:#eef2ff;
-                        padding:6px 10px;
-                        border-radius:6px;
-                        margin-bottom:4px;
-                        font-size:0.85rem;
+                        align-items:flex-start;
                     ">
 
-                    <span>
+                    <div>
 
-                        <strong>
-                            ${escapeHtml(key)}
-                        </strong>:
-
-                        ${attributesObj[key]}
-
-                    </span>
-
-
-                    <div
-                        style="
-                            display:flex;
-                            gap:4px;
-                        ">
-
-                        <button
-                            onclick="
-                                adjustVariantInline(
-                                    '${escapeJs(prod.ProductId)}',
-                                    '${escapeJs(key)}',
-                                    1,
-                                    'add'
-                                )
-                            "
+                        <strong
                             style="
-                                background:var(--success);
-                                color:white;
-                                border:none;
-                                padding:2px 6px;
-                                border-radius:4px;
-                                cursor:pointer;
-                            "
-                            title="Add Stock">
+                                font-size:1.05rem;
+                            ">
 
-                            +
+                            ${escapeHtml(
+                                prod.Name
+                            )}
 
-                        </button>
+                        </strong>
 
+                        <br>
 
-                        <button
-                            onclick="
-                                adjustVariantInline(
-                                    '${escapeJs(prod.ProductId)}',
-                                    '${escapeJs(key)}',
-                                    1,
-                                    'reduce'
-                                )
-                            "
+                        <small
                             style="
-                                background:#f59e0b;
-                                color:white;
-                                border:none;
-                                padding:2px 6px;
-                                border-radius:4px;
-                                cursor:pointer;
-                            "
-                            title="Reduce Stock">
+                                color:#4b5563;
+                            ">
 
-                            -
+                            Unit Cost:
+                            $${number(
+                                prod.Cost
+                            ).toFixed(2)}
 
-                        </button>
+                            |
 
+                            Total Stock Qty:
 
-                        <button
-                            onclick="
-                                adjustVariantInline(
-                                    '${escapeJs(prod.ProductId)}',
-                                    '${escapeJs(key)}',
-                                    1,
-                                    'loss'
-                                )
-                            "
-                            style="
-                                background:var(--danger);
-                                color:white;
-                                border:none;
-                                padding:2px 6px;
-                                border-radius:4px;
-                                cursor:pointer;
-                            "
-                            title="Corrupted Stock">
+                            <strong>
+                                ${displayQty}
+                            </strong>
 
-                            🗑️
-
-                        </button>
+                        </small>
 
                     </div>
 
-                </div>
-
-            `;
-        }
-
-
-        if (!attrHtml) {
-
-            attrHtml = `
-                <small
-                    style="
-                        color:var(--text-muted);
-                    ">
-
-                    No variations added yet.
-
-                </small>
-            `;
-        }
-
-
-        let displayQty =
-            parseFloat(prod.Qty);
-
-
-        if (isNaN(displayQty)) {
-
-            displayQty =
-                Object.values(attributesObj)
-                    .reduce(
-                        (a, b) =>
-                            a +
-                            (parseFloat(b) || 0),
-                        0
-                    );
-        }
-
-
-        const card =
-            document.createElement("div");
-
-
-        card.style.cssText = `
-            padding:14px;
-            background:#f9fafb;
-            border:1px solid #e5e7eb;
-            border-radius:8px;
-            display:flex;
-            flex-direction:column;
-            gap:10px;
-        `;
-
-
-        card.innerHTML = `
-
-            <div
-                style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:flex-start;
-                ">
-
-                <div>
-
-                    <strong
-                        style="
-                            font-size:1.05rem;
-                        ">
-
-                        ${escapeHtml(prod.Name)}
-
-                    </strong>
-
-                    <br>
-
-                    <small
-                        style="color:#4b5563;">
-
-                        Unit Cost:
-                        $${parseFloat(prod.Cost || 0).toFixed(2)}
-
-                        |
-
-                        Total Stock Qty:
-
-                        <strong>
-                            ${displayQty}
-                        </strong>
-
-                    </small>
-
-                </div>
-
-
-                <div
-                    style="
-                        display:flex;
-                        gap:6px;
-                    ">
 
                     <button
                         onclick="
                             editProduct(
-                                '${escapeJs(prod.ProductId)}'
+                                '${escapeJs(
+                                    prod.ProductId
+                                )}'
                             )
                         "
                         style="
@@ -1560,7 +2239,6 @@ function renderStoreDetail(storeId) {
                             border:none;
                             padding:6px 10px;
                             border-radius:4px;
-                            font-size:0.75rem;
                             cursor:pointer;
                         ">
 
@@ -1570,105 +2248,106 @@ function renderStoreDetail(storeId) {
 
                 </div>
 
-            </div>
+
+                <div>
+
+                    <small
+                        style="
+                            font-weight:600;
+                            color:#374151;
+                        ">
+
+                        Variations / Colors & Stock Controls:
+
+                    </small>
 
 
-            <div>
+                    <div
+                        style="margin-top:6px;">
 
-                <small
-                    style="
-                        font-weight:600;
-                        color:#374151;
-                    ">
+                        ${attrHtml}
 
-                    Variations / Colors & Stock Controls:
-
-                </small>
-
-
-                <div
-                    style="margin-top:6px;">
-
-                    ${attrHtml}
+                    </div>
 
                 </div>
 
-            </div>
 
-
-            <div
-                style="
-                    display:flex;
-                    gap:8px;
-                    margin-top:4px;
-                    background:white;
-                    padding:8px;
-                    border:1px dashed #d1d5db;
-                    border-radius:6px;
-                ">
-
-                <input
-                    type="text"
-                    id="newVarName_${escapeHtml(prod.ProductId)}"
-                    placeholder="New variant (e.g. Blue)"
+                <div
                     style="
-                        flex:2;
-                        padding:6px;
-                        border:1px solid #d1d5db;
-                        border-radius:4px;
-                        font-size:0.8rem;
+                        display:flex;
+                        gap:8px;
+                        margin-top:4px;
+                        background:white;
+                        padding:8px;
+                        border:1px dashed #d1d5db;
+                        border-radius:6px;
                     ">
 
-
-                <input
-                    type="number"
-                    id="newVarQty_${escapeHtml(prod.ProductId)}"
-                    placeholder="Qty"
-                    value="1"
-                    min="1"
-                    style="
-                        flex:1;
-                        padding:6px;
-                        border:1px solid #d1d5db;
-                        border-radius:4px;
-                        font-size:0.8rem;
-                    ">
+                    <input
+                        type="text"
+                        id="newVarName_${escapeJs(
+                            prod.ProductId
+                        )}"
+                        placeholder="New variant (e.g. Blue)"
+                        style="
+                            flex:2;
+                            padding:6px;
+                            border:1px solid #d1d5db;
+                            border-radius:4px;
+                        ">
 
 
-                <button
-                    onclick="
-                        addNewVariantInline(
-                            '${escapeJs(prod.ProductId)}'
-                        )
-                    "
-                    style="
-                        background:var(--success);
-                        color:white;
-                        border:none;
-                        padding:6px 12px;
-                        border-radius:4px;
-                        font-size:0.8rem;
-                        font-weight:bold;
-                        cursor:pointer;
-                    ">
-
-                    Add
-
-                </button>
-
-            </div>
-
-        `;
+                    <input
+                        type="number"
+                        id="newVarQty_${escapeJs(
+                            prod.ProductId
+                        )}"
+                        placeholder="Qty"
+                        value="1"
+                        min="1"
+                        style="
+                            flex:1;
+                            padding:6px;
+                            border:1px solid #d1d5db;
+                            border-radius:4px;
+                        ">
 
 
-        prodListContainer.appendChild(card);
+                    <button
+                        onclick="
+                            addNewVariantInline(
+                                '${escapeJs(
+                                    prod.ProductId
+                                )}'
+                            )
+                        "
+                        style="
+                            background:var(--success);
+                            color:white;
+                            border:none;
+                            padding:6px 12px;
+                            border-radius:4px;
+                            font-weight:bold;
+                            cursor:pointer;
+                        ">
 
-    });
+                        Add
+
+                    </button>
+
+                </div>
+            `;
+
+
+            prodListContainer
+                .appendChild(card);
+        }
+    );
 }
 
 
 /* =========================================================
-   PRODUCT
+   PRODUCT MODAL
 ========================================================= */
 
 function openAddProductModal() {
@@ -1686,7 +2365,7 @@ function openAddProductModal() {
 
     document.getElementById(
         "productForm"
-    ).reset();
+    )?.reset();
 
 
     document.getElementById(
@@ -1696,16 +2375,21 @@ function openAddProductModal() {
 }
 
 
-function editProduct(productId) {
+function editProduct(
+    productId
+) {
 
     const prod =
         allProducts.find(
-            p => p.ProductId == productId
+            p =>
+                String(p.ProductId) ===
+                String(productId)
         );
 
 
-    if (!prod)
+    if (!prod) {
         return;
+    }
 
 
     document.getElementById(
@@ -1759,76 +2443,141 @@ async function submitProduct(e) {
         ).value;
 
 
-    const actionType =
-        editId
-            ? "edit_product"
-            : "add_product";
+    const name =
+        document.getElementById(
+            "prodName"
+        ).value.trim();
 
 
-    const payload = {
-
-        actionType,
-
-        productId:
-            editId,
-
-        user:
-            currentUser,
-
-        storeId:
-            activeStoreId,
-
-        name:
-            document.getElementById(
-                "prodName"
-            ).value,
-
-        cost:
+    const cost =
+        number(
             document.getElementById(
                 "prodCost"
             ).value
+        );
 
-    };
+
+    if (!name) {
+
+        alert(
+            "Product name is required."
+        );
+
+        return;
+    }
 
 
-    await fetch(API_URL, {
+    if (cost < 0) {
 
-        method: "POST",
+        alert(
+            "Product cost cannot be negative."
+        );
 
-        body:
-            JSON.stringify(payload),
+        return;
+    }
 
-        headers: {
-            "Content-Type":
-                "text/plain;charset=utf-8"
+
+    try {
+
+        await requireAuth();
+
+
+        if (editId) {
+
+            const productRef =
+                doc(
+                    db,
+                    COLLECTIONS.products,
+                    editId
+                );
+
+
+            await updateDoc(
+                productRef,
+                {
+                    Name: name,
+                    Cost: cost
+                }
+            );
+
         }
 
-    });
+        else {
+
+            if (!activeStoreId) {
+
+                throw new Error(
+                    "Please open a store first."
+                );
+            }
 
 
-    closeProductModal();
+            const productId =
+                makeId("PROD-");
 
-    document
-        .getElementById(
+
+            await setDoc(
+                doc(
+                    db,
+                    COLLECTIONS.products,
+                    productId
+                ),
+                {
+                    ProductId:
+                        productId,
+
+                    StoreId:
+                        activeStoreId,
+
+                    Name:
+                        name,
+
+                    Cost:
+                        cost,
+
+                    Qty:
+                        0,
+
+                    Attributes:
+                        {}
+                }
+            );
+        }
+
+
+        closeProductModal();
+
+        document.getElementById(
             "productForm"
-        )
-        .reset();
+        )?.reset();
 
-    await loadData();
+
+        await loadData();
+
+    }
+
+    catch (error) {
+
+        alert(
+            error.message ||
+            "Failed to save product."
+        );
+    }
 }
 
 
 /* =========================================================
-   VARIATIONS
+   ADD VARIANT
 ========================================================= */
 
-async function addNewVariantInline(productId) {
+async function addNewVariantInline(
+    productId
+) {
 
     const nameInput =
         document.getElementById(
             `newVarName_${productId}`
         );
-
 
     const qtyInput =
         document.getElementById(
@@ -1837,16 +2586,17 @@ async function addNewVariantInline(productId) {
 
 
     const variantName =
-        nameInput.value.trim();
+        nameInput?.value.trim();
 
 
     const variantQty =
-        parseFloat(qtyInput.value);
+        number(
+            qtyInput?.value
+        );
 
 
     if (
         !variantName ||
-        isNaN(variantQty) ||
         variantQty <= 0
     ) {
 
@@ -1858,40 +2608,153 @@ async function addNewVariantInline(productId) {
     }
 
 
-    await fetch(API_URL, {
+    try {
 
-        method: "POST",
+        await updateProductVariant(
+            productId,
+            variantName,
+            variantQty
+        );
 
-        body: JSON.stringify({
+        await loadData();
 
-            actionType:
-                "update_product_attributes",
+    }
 
-            user:
-                currentUser,
+    catch (error) {
 
-            productId:
-                productId,
-
-            variantName:
-                variantName,
-
-            variantQty:
-                variantQty
-
-        }),
-
-        headers: {
-            "Content-Type":
-                "text/plain;charset=utf-8"
-        }
-
-    });
-
-
-    await loadData();
+        alert(
+            error.message ||
+            "Failed to add variation."
+        );
+    }
 }
 
+
+async function updateProductVariant(
+    productId,
+    variantName,
+    variantQty
+) {
+
+    await requireAuth();
+
+
+    const productRef =
+        doc(
+            db,
+            COLLECTIONS.products,
+            productId
+        );
+
+
+    await runTransaction(
+        db,
+        async transaction => {
+
+            const snapshot =
+                await transaction.get(
+                    productRef
+                );
+
+
+            if (!snapshot.exists()) {
+
+                throw new Error(
+                    "Product not found."
+                );
+            }
+
+
+            const product =
+                snapshot.data();
+
+
+            const attributes = {
+                ...parseAttributes(
+                    product
+                )
+            };
+
+
+            attributes[variantName] =
+                number(
+                    attributes[
+                        variantName
+                    ]
+                ) +
+                variantQty;
+
+
+            const totalQty =
+                Object.values(
+                    attributes
+                ).reduce(
+                    (total, value) =>
+                        total +
+                        number(value),
+                    0
+                );
+
+
+            transaction.update(
+                productRef,
+                {
+                    Qty:
+                        totalQty,
+
+                    Attributes:
+                        attributes
+                }
+            );
+
+
+            const txId =
+                makeId("TX-");
+
+
+            transaction.set(
+                doc(
+                    db,
+                    COLLECTIONS.transactions,
+                    txId
+                ),
+                {
+                    Timestamp:
+                        nowISO(),
+
+                    User:
+                        currentUser || "",
+
+                    Action:
+                        "Remove",
+
+                    Amount:
+                        number(product.Cost) *
+                        variantQty,
+
+                    Category:
+                        "Work",
+
+                    Profile:
+                        "",
+
+                    Notes:
+                        "Purchased Stock (" +
+                        variantName +
+                        ": +" +
+                        variantQty +
+                        "): " +
+                        product.Name
+                }
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   STOCK ADJUSTMENT
+========================================================= */
 
 async function adjustVariantInline(
     productId,
@@ -1900,106 +2763,400 @@ async function adjustVariantInline(
     mode
 ) {
 
-    let msg =
+    let message =
         `Modify quantity for ${variantName}:`;
 
 
     if (mode === "reduce") {
 
-        msg =
+        message =
             `Reduce stock for ${variantName} (without counting as financial loss):`;
     }
 
 
     if (mode === "loss") {
 
-        msg =
+        message =
             `Mark corrupted stock/loss for ${variantName}:`;
     }
 
 
     const qtyStr =
         prompt(
-            msg,
+            message,
             Math.abs(defaultStep)
         );
 
 
-    if (!qtyStr)
+    if (!qtyStr) {
         return;
+    }
 
 
-    const val =
-        parseFloat(qtyStr);
+    const value =
+        number(qtyStr);
 
 
-    if (
-        isNaN(val) ||
-        val <= 0
-    )
+    if (value <= 0) {
         return;
-
-
-    let payload = {
-
-        user:
-            currentUser,
-
-        productId:
-            productId,
-
-        variantName:
-            variantName
-
-    };
-
-
-    if (mode === "add") {
-
-        payload.actionType =
-            "adjust_stock_non_loss";
-
-        payload.changeQty =
-            val;
     }
 
 
-    else if (mode === "reduce") {
+    try {
 
-        payload.actionType =
-            "adjust_stock_non_loss";
+        if (mode === "loss") {
 
-        payload.changeQty =
-            -val;
-    }
+            await changeStock(
+                productId,
+                variantName,
+                -value,
+                "loss"
+            );
 
-
-    else if (mode === "loss") {
-
-        payload.actionType =
-            "corrupted_product";
-
-        payload.corruptedQty =
-            val;
-    }
-
-
-    await fetch(API_URL, {
-
-        method: "POST",
-
-        body:
-            JSON.stringify(payload),
-
-        headers: {
-            "Content-Type":
-                "text/plain;charset=utf-8"
         }
 
-    });
+        else {
+
+            await changeStock(
+                productId,
+                variantName,
+                mode === "add"
+                    ? value
+                    : -value,
+                "normal"
+            );
+        }
 
 
-    await loadData();
+        await loadData();
+
+    }
+
+    catch (error) {
+
+        alert(
+            error.message ||
+            "Failed to change stock."
+        );
+    }
+}
+
+
+async function changeStock(
+    productId,
+    variantName,
+    changeQty,
+    mode
+) {
+
+    await requireAuth();
+
+
+    const productRef =
+        doc(
+            db,
+            COLLECTIONS.products,
+            productId
+        );
+
+
+    await runTransaction(
+        db,
+        async transaction => {
+
+            const snapshot =
+                await transaction.get(
+                    productRef
+                );
+
+
+            if (!snapshot.exists()) {
+
+                throw new Error(
+                    "Product not found."
+                );
+            }
+
+
+            const product =
+                snapshot.data();
+
+
+            const cost =
+                number(product.Cost);
+
+
+            const attributes =
+                parseAttributes(
+                    product
+                );
+
+
+            const hasVariants =
+                Object.keys(
+                    attributes
+                ).length > 0;
+
+
+            if (hasVariants) {
+
+                if (!variantName) {
+
+                    throw new Error(
+                        "Variant is required."
+                    );
+                }
+
+
+                const oldQty =
+                    number(
+                        attributes[
+                            variantName
+                        ]
+                    );
+
+
+                if (
+                    changeQty < 0 &&
+                    oldQty +
+                    changeQty < 0
+                ) {
+
+                    throw new Error(
+                        "Stock cannot become negative."
+                    );
+                }
+
+
+                const newQty =
+                    oldQty +
+                    changeQty;
+
+
+                if (newQty <= 0) {
+
+                    delete attributes[
+                        variantName
+                    ];
+
+                }
+
+                else {
+
+                    attributes[
+                        variantName
+                    ] = newQty;
+                }
+
+
+                const totalQty =
+                    Object.values(
+                        attributes
+                    ).reduce(
+                        (total, value) =>
+                            total +
+                            number(value),
+                        0
+                    );
+
+
+                transaction.update(
+                    productRef,
+                    {
+                        Qty:
+                            totalQty,
+
+                        Attributes:
+                            attributes
+                    }
+                );
+
+
+                const txId =
+                    makeId("TX-");
+
+
+                if (mode === "loss") {
+
+                    transaction.set(
+                        doc(
+                            db,
+                            COLLECTIONS.transactions,
+                            txId
+                        ),
+                        {
+                            Timestamp:
+                                nowISO(),
+
+                            User:
+                                currentUser || "",
+
+                            Action:
+                                "Remove",
+
+                            Amount:
+                                cost *
+                                Math.abs(
+                                    changeQty
+                                ),
+
+                            Category:
+                                "Work",
+
+                            Profile:
+                                "",
+
+                            Notes:
+                                "Corrupted Stock Loss (" +
+                                Math.abs(
+                                    changeQty
+                                ) +
+                                "x " +
+                                variantName +
+                                "): " +
+                                product.Name
+                        }
+                    );
+
+                }
+
+                else {
+
+                    transaction.set(
+                        doc(
+                            db,
+                            COLLECTIONS.transactions,
+                            txId
+                        ),
+                        {
+                            Timestamp:
+                                nowISO(),
+
+                            User:
+                                currentUser || "",
+
+                            Action:
+                                changeQty > 0
+                                    ? "Remove"
+                                    : "Add",
+
+                            Amount:
+                                cost *
+                                Math.abs(
+                                    changeQty
+                                ),
+
+                            Category:
+                                "Work",
+
+                            Profile:
+                                "",
+
+                            Notes:
+                                (
+                                    changeQty > 0
+                                        ? "Added Stock ("
+                                        : "Reduced Stock / Return ("
+                                ) +
+                                variantName +
+                                ": " +
+                                changeQty +
+                                "): " +
+                                product.Name
+                        }
+                    );
+                }
+
+                return;
+            }
+
+
+            /*
+             * Product without variants.
+             */
+
+            const oldQty =
+                number(product.Qty);
+
+
+            if (
+                oldQty +
+                changeQty <
+                0
+            ) {
+
+                throw new Error(
+                    "Stock cannot become negative."
+                );
+            }
+
+
+            transaction.update(
+                productRef,
+                {
+                    Qty:
+                        oldQty +
+                        changeQty
+                }
+            );
+
+
+            const txId =
+                makeId("TX-");
+
+
+            transaction.set(
+                doc(
+                    db,
+                    COLLECTIONS.transactions,
+                    txId
+                ),
+                {
+                    Timestamp:
+                        nowISO(),
+
+                    User:
+                        currentUser || "",
+
+                    Action:
+                        mode === "loss"
+                            ? "Remove"
+                            : (
+                                changeQty > 0
+                                    ? "Remove"
+                                    : "Add"
+                            ),
+
+                    Amount:
+                        cost *
+                        Math.abs(
+                            changeQty
+                        ),
+
+                    Category:
+                        "Work",
+
+                    Profile:
+                        "",
+
+                    Notes:
+                        mode === "loss"
+
+                            ? "Corrupted Stock Loss (" +
+                              Math.abs(changeQty) +
+                              "x): " +
+                              product.Name
+
+                            : (
+                                changeQty > 0
+                                    ? "Added Stock: "
+                                    : "Reduced Stock / Return: "
+                            ) +
+                            product.Name
+                }
+            );
+        }
+    );
 }
 
 
@@ -2030,108 +3187,142 @@ async function submitAd(e) {
     e.preventDefault();
 
 
-    const payload = {
+    if (!activeStoreId) {
 
-        actionType:
-            "add_ad",
+        alert(
+            "Please open a store first."
+        );
 
-        user:
-            currentUser,
+        return;
+    }
 
-        storeId:
-            activeStoreId,
 
-        amount:
+    const amount =
+        number(
             document.getElementById(
                 "adAmount"
-            ).value,
-
-        notes:
-            document.getElementById(
-                "adNotes"
             ).value
-
-    };
-
-
-    await fetch(API_URL, {
-
-        method: "POST",
-
-        body:
-            JSON.stringify(payload),
-
-        headers: {
-            "Content-Type":
-                "text/plain;charset=utf-8"
-        }
-
-    });
+        );
 
 
-    closeAdModal();
+    const notes =
+        document.getElementById(
+            "adNotes"
+        ).value.trim();
 
 
-    document
-        .getElementById(
+    if (amount <= 0) {
+
+        alert(
+            "Ad amount must be greater than zero."
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await requireAuth();
+
+
+        const batch =
+            writeBatch(db);
+
+
+        const adId =
+            makeId("AD-");
+
+
+        batch.set(
+            doc(
+                db,
+                COLLECTIONS.ads,
+                adId
+            ),
+            {
+                AdId:
+                    adId,
+
+                StoreId:
+                    activeStoreId,
+
+                Amount:
+                    amount,
+
+                Timestamp:
+                    nowISO(),
+
+                Notes:
+                    notes
+            }
+        );
+
+
+        const transactionId =
+            makeId("TX-");
+
+
+        batch.set(
+            doc(
+                db,
+                COLLECTIONS.transactions,
+                transactionId
+            ),
+            {
+                Timestamp:
+                    nowISO(),
+
+                User:
+                    currentUser || "",
+
+                Action:
+                    "Remove",
+
+                Amount:
+                    amount,
+
+                Category:
+                    "Work",
+
+                Profile:
+                    "",
+
+                Notes:
+                    "Ad Expense for Store ID " +
+                    activeStoreId +
+                    (
+                        notes
+                            ? " | " + notes
+                            : ""
+                    )
+            }
+        );
+
+
+        await batch.commit();
+
+
+        closeAdModal();
+
+
+        document.getElementById(
             "adForm"
-        )
-        .reset();
+        )?.reset();
 
 
-    await loadData();
-}
+        await loadData();
 
-
-/* =========================================================
-   HTML SAFETY HELPERS
-========================================================= */
-
-function escapeHtml(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-        return "";
     }
 
+    catch (error) {
 
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
-function escapeJs(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-        return "";
+        alert(
+            error.message ||
+            "Failed to save advertisement."
+        );
     }
-
-
-    return String(value)
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/\n/g, "\\n")
-        .replace(/\r/g, "\\r");
 }
-
-
-/* =========================================================
-   CHECKOUT
-========================================================= */
-
-let checkoutItems = [];
-
-let qrScanner = null;
 
 
 /* =========================================================
@@ -2145,8 +3336,9 @@ function renderCheckoutStores() {
             "checkoutStore"
         );
 
-    if (!select)
+    if (!select) {
         return;
+    }
 
 
     const currentValue =
@@ -2163,16 +3355,22 @@ function renderCheckoutStores() {
     allStores.forEach(store => {
 
         const option =
-            document.createElement("option");
+            document.createElement(
+                "option"
+            );
+
 
         option.value =
             store.StoreId;
 
+
         option.textContent =
             store.StoreName;
 
-        select.appendChild(option);
 
+        select.appendChild(
+            option
+        );
     });
 
 
@@ -2187,9 +3385,7 @@ function renderCheckoutStores() {
 
         select.value =
             currentValue;
-
     }
-
 }
 
 
@@ -2203,13 +3399,24 @@ function checkoutStoreChanged() {
     const storeId =
         document.getElementById(
             "checkoutStore"
-        ).value;
+        )?.value;
 
 
     const productSelect =
         document.getElementById(
             "checkoutProduct"
         );
+
+
+    const variantSelect =
+        document.getElementById(
+            "checkoutVariant"
+        );
+
+
+    if (!productSelect) {
+        return;
+    }
 
 
     productSelect.innerHTML = `
@@ -2219,17 +3426,19 @@ function checkoutStoreChanged() {
     `;
 
 
-    document.getElementById(
-        "checkoutVariant"
-    ).innerHTML = `
-        <option value="">
-            No variation
-        </option>
-    `;
+    if (variantSelect) {
+
+        variantSelect.innerHTML = `
+            <option value="">
+                No variation
+            </option>
+        `;
+    }
 
 
-    if (!storeId)
+    if (!storeId) {
         return;
+    }
 
 
     allProducts
@@ -2245,18 +3454,19 @@ function checkoutStoreChanged() {
                     "option"
                 );
 
+
             option.value =
                 product.ProductId;
+
 
             option.textContent =
                 `${product.Name} — Stock: ${getProductTotalQty(product)}`;
 
+
             productSelect.appendChild(
                 option
             );
-
         });
-
 }
 
 
@@ -2265,13 +3475,18 @@ function checkoutProductChanged() {
     const productId =
         document.getElementById(
             "checkoutProduct"
-        ).value;
+        )?.value;
 
 
     const variantSelect =
         document.getElementById(
             "checkoutVariant"
         );
+
+
+    if (!variantSelect) {
+        return;
+    }
 
 
     variantSelect.innerHTML = `
@@ -2281,8 +3496,9 @@ function checkoutProductChanged() {
     `;
 
 
-    if (!productId)
+    if (!productId) {
         return;
+    }
 
 
     const product =
@@ -2293,40 +3509,29 @@ function checkoutProductChanged() {
         );
 
 
-    if (!product)
+    if (!product) {
         return;
-
-
-    let attributes = {};
-
-    try {
-
-        attributes =
-            JSON.parse(
-                product.Attributes ||
-                "{}"
-            );
-
     }
 
-    catch (e) {
 
-        attributes = {};
-
-    }
+    const attributes =
+        parseAttributes(
+            product
+        );
 
 
     Object.keys(attributes)
         .forEach(variant => {
 
             const qty =
-                parseFloat(
+                number(
                     attributes[variant]
-                ) || 0;
+                );
 
 
-            if (qty <= 0)
+            if (qty <= 0) {
                 return;
+            }
 
 
             const option =
@@ -2334,69 +3539,24 @@ function checkoutProductChanged() {
                     "option"
                 );
 
+
             option.value =
                 variant;
+
 
             option.textContent =
                 `${variant} — Stock: ${qty}`;
 
+
             variantSelect.appendChild(
                 option
             );
-
         });
-
 }
 
 
 /* =========================================================
-   PRODUCT STOCK
-========================================================= */
-
-function getProductTotalQty(product) {
-
-    let qty =
-        parseFloat(
-            product.Qty
-        );
-
-
-    if (!isNaN(qty))
-        return qty;
-
-
-    try {
-
-        const attributes =
-            JSON.parse(
-                product.Attributes ||
-                "{}"
-            );
-
-
-        return Object.values(
-            attributes
-        )
-        .reduce(
-            (total, value) =>
-                total +
-                (parseFloat(value) || 0),
-            0
-        );
-
-    }
-
-    catch (e) {
-
-        return 0;
-
-    }
-
-}
-
-
-/* =========================================================
-   ADD PRODUCT TO ORDER
+   ADD PRODUCT TO CHECKOUT
 ========================================================= */
 
 function addCheckoutProduct() {
@@ -2404,20 +3564,20 @@ function addCheckoutProduct() {
     const productId =
         document.getElementById(
             "checkoutProduct"
-        ).value;
+        )?.value;
 
 
     const variant =
         document.getElementById(
             "checkoutVariant"
-        ).value;
+        )?.value || "";
 
 
     const quantity =
-        parseFloat(
+        number(
             document.getElementById(
                 "checkoutQuantity"
-            ).value
+            )?.value
         );
 
 
@@ -2428,21 +3588,16 @@ function addCheckoutProduct() {
         );
 
         return;
-
     }
 
 
-    if (
-        isNaN(quantity) ||
-        quantity <= 0
-    ) {
+    if (quantity <= 0) {
 
         alert(
             "Please enter a valid quantity."
         );
 
         return;
-
     }
 
 
@@ -2454,8 +3609,9 @@ function addCheckoutProduct() {
         );
 
 
-    if (!product)
+    if (!product) {
         return;
+    }
 
 
     let availableQty = 0;
@@ -2463,27 +3619,16 @@ function addCheckoutProduct() {
 
     if (variant) {
 
-        try {
-
-            const attributes =
-                JSON.parse(
-                    product.Attributes ||
-                    "{}"
-                );
+        const attributes =
+            parseAttributes(
+                product
+            );
 
 
-            availableQty =
-                parseFloat(
-                    attributes[variant]
-                ) || 0;
-
-        }
-
-        catch (e) {
-
-            availableQty = 0;
-
-        }
+        availableQty =
+            number(
+                attributes[variant]
+            );
 
     }
 
@@ -2493,14 +3638,8 @@ function addCheckoutProduct() {
             getProductTotalQty(
                 product
             );
-
     }
 
-
-    /*
-     * Check quantity already selected
-     * for the same product/variation.
-     */
 
     const existing =
         checkoutItems.find(
@@ -2508,11 +3647,11 @@ function addCheckoutProduct() {
                 String(
                     item.productId
                 ) ===
-                String(productId) &&
+                    String(productId) &&
                 String(
                     item.variant
                 ) ===
-                String(variant)
+                    String(variant)
         );
 
 
@@ -2533,7 +3672,6 @@ function addCheckoutProduct() {
         );
 
         return;
-
     }
 
 
@@ -2561,17 +3699,12 @@ function addCheckoutProduct() {
                 quantity,
 
             cost:
-                parseFloat(
-                    product.Cost
-                ) || 0
-
+                number(product.Cost)
         });
-
     }
 
 
     renderCheckoutItems();
-
 }
 
 
@@ -2579,7 +3712,9 @@ function addCheckoutProduct() {
    REMOVE CHECKOUT PRODUCT
 ========================================================= */
 
-function removeCheckoutProduct(index) {
+function removeCheckoutProduct(
+    index
+) {
 
     checkoutItems.splice(
         index,
@@ -2587,7 +3722,6 @@ function removeCheckoutProduct(index) {
     );
 
     renderCheckoutItems();
-
 }
 
 
@@ -2603,27 +3737,32 @@ function renderCheckoutItems() {
         );
 
 
-    if (!container)
+    if (!container) {
         return;
+    }
 
 
     container.innerHTML = "";
 
 
     if (
-        checkoutItems.length === 0
+        checkoutItems.length ===
+        0
     ) {
 
         container.innerHTML = `
-            <small style="color:var(--text-muted);">
+            <small
+                style="
+                    color:var(--text-muted);
+                ">
                 No products added yet.
             </small>
         `;
 
+
         updateCheckoutSummary();
 
         return;
-
     }
 
 
@@ -2650,7 +3789,9 @@ function renderCheckoutItems() {
 
             const variantText =
                 item.variant
-                    ? ` — ${escapeHtml(item.variant)}`
+                    ? ` — ${escapeHtml(
+                        item.variant
+                    )}`
                     : "";
 
 
@@ -2703,20 +3844,17 @@ function renderCheckoutItems() {
                     Remove
 
                 </button>
-
             `;
 
 
             container.appendChild(
                 div
             );
-
         }
     );
 
 
     updateCheckoutSummary();
-
 }
 
 
@@ -2739,19 +3877,19 @@ function updateCheckoutSummary() {
 
 
     const sellingPrice =
-        parseFloat(
+        number(
             document.getElementById(
                 "checkoutSellingPrice"
             )?.value
-        ) || 0;
+        );
 
 
     const deliveryFee =
-        parseFloat(
+        number(
             document.getElementById(
                 "checkoutDeliveryFee"
             )?.value
-        ) || 0;
+        );
 
 
     const customerTotal =
@@ -2759,38 +3897,42 @@ function updateCheckoutSummary() {
         deliveryFee;
 
 
-    /*
-     * Delivery is paid to courier.
-     * Therefore it is NOT profit.
-     */
-
     const profit =
         sellingPrice -
         totalCost;
 
 
-    document.getElementById(
-        "checkoutCost"
-    ).innerText =
-        `$${totalCost.toFixed(2)}`;
+    const elements = {
+
+        checkoutCost:
+            `$${totalCost.toFixed(2)}`,
+
+        checkoutSell:
+            `$${sellingPrice.toFixed(2)}`,
+
+        checkoutDelivery:
+            `$${deliveryFee.toFixed(2)}`,
+
+        checkoutCustomerTotal:
+            `$${customerTotal.toFixed(2)}`,
+
+        checkoutProfit:
+            `$${profit.toFixed(2)}`
+    };
 
 
-    document.getElementById(
-        "checkoutSell"
-    ).innerText =
-        `$${sellingPrice.toFixed(2)}`;
+    Object.keys(elements)
+        .forEach(id => {
 
+            const element =
+                document.getElementById(id);
 
-    document.getElementById(
-        "checkoutDelivery"
-    ).innerText =
-        `$${deliveryFee.toFixed(2)}`;
+            if (element) {
 
-
-    document.getElementById(
-        "checkoutCustomerTotal"
-    ).innerText =
-        `$${customerTotal.toFixed(2)}`;
+                element.innerText =
+                    elements[id];
+            }
+        });
 
 
     const profitElement =
@@ -2799,15 +3941,13 @@ function updateCheckoutSummary() {
         );
 
 
-    profitElement.innerText =
-        `$${profit.toFixed(2)}`;
+    if (profitElement) {
 
-
-    profitElement.style.color =
-        profit >= 0
-            ? "var(--success)"
-            : "var(--danger)";
-
+        profitElement.style.color =
+            profit >= 0
+                ? "var(--success)"
+                : "var(--danger)";
+    }
 }
 
 
@@ -2818,7 +3958,8 @@ function updateCheckoutSummary() {
 async function createCheckoutOrder() {
 
     if (
-        checkoutItems.length === 0
+        checkoutItems.length ===
+        0
     ) {
 
         alert(
@@ -2826,36 +3967,35 @@ async function createCheckoutOrder() {
         );
 
         return;
-
     }
 
 
     const storeId =
         document.getElementById(
             "checkoutStore"
-        ).value;
+        )?.value;
 
 
     const sellingPrice =
         parseFloat(
             document.getElementById(
                 "checkoutSellingPrice"
-            ).value
+            )?.value
         );
 
 
     const deliveryFee =
-        parseFloat(
+        number(
             document.getElementById(
                 "checkoutDeliveryFee"
-            ).value
-        ) || 0;
+            )?.value
+        );
 
 
     const trackingNumber =
         document.getElementById(
             "checkoutTracking"
-        ).value.trim();
+        )?.value.trim();
 
 
     if (!storeId) {
@@ -2865,7 +4005,6 @@ async function createCheckoutOrder() {
         );
 
         return;
-
     }
 
 
@@ -2879,7 +4018,6 @@ async function createCheckoutOrder() {
         );
 
         return;
-
     }
 
 
@@ -2890,7 +4028,6 @@ async function createCheckoutOrder() {
         );
 
         return;
-
     }
 
 
@@ -2900,86 +4037,61 @@ async function createCheckoutOrder() {
         );
 
 
-    btn.disabled = true;
-
-    btn.innerText =
-        "Creating Order...";
-
-
     const status =
         document.getElementById(
             "checkoutStatus"
         );
 
 
+    if (btn) {
+
+        btn.disabled = true;
+
+        btn.innerText =
+            "Creating Order...";
+    }
+
+
     try {
 
-        const response =
-            await fetch(
-                API_URL,
-                {
-
-                    method: "POST",
-
-                    body:
-                        JSON.stringify({
-
-                            actionType:
-                                "create_order",
-
-                            user:
-                                currentUser,
-
-                            storeId:
-                                storeId,
-
-                            items:
-                                checkoutItems,
-
-                            sellingPrice:
-                                sellingPrice,
-
-                            deliveryFee:
-                                deliveryFee,
-
-                            trackingNumber:
-                                trackingNumber
-
-                        }),
-
-                    headers: {
-
-                        "Content-Type":
-                            "text/plain;charset=utf-8"
-
-                    }
-
-                }
-            );
+        await requireAuth();
 
 
         const result =
-            await response.json();
+            await createOrderFirestore({
+
+                storeId,
+
+                items:
+                    checkoutItems.map(
+                        item => ({
+                            productId:
+                                item.productId,
+
+                            variant:
+                                item.variant,
+
+                            quantity:
+                                item.quantity
+                        })
+                    ),
+
+                sellingPrice,
+
+                deliveryFee,
+
+                trackingNumber
+            });
 
 
-        if (
-            result.status !==
-            "success"
-        ) {
+        if (status) {
 
-            throw new Error(
-                result.message ||
-                "Failed to create order."
-            );
+            status.innerText =
+                "Order created successfully!";
 
+            status.style.color =
+                "var(--success)";
         }
-
-
-        status.innerText =
-            "Order created successfully!";
-
-        status.style.color =
-            "var(--success)";
 
 
         checkoutItems = [];
@@ -3008,30 +4120,842 @@ async function createCheckoutOrder() {
 
         checkoutStoreChanged();
 
+
     }
 
     catch (error) {
 
         console.error(error);
 
-        status.innerText =
-            error.message ||
-            "Failed to create order.";
 
-        status.style.color =
-            "var(--danger)";
+        if (status) {
+
+            status.innerText =
+                error.message ||
+                "Failed to create order.";
+
+            status.style.color =
+                "var(--danger)";
+        }
+
+        else {
+
+            alert(
+                error.message ||
+                "Failed to create order."
+            );
+        }
 
     }
 
     finally {
 
-        btn.disabled = false;
+        if (btn) {
 
-        btn.innerText =
-            "Create Order";
+            btn.disabled = false;
 
+            btn.innerText =
+                "Create Order";
+        }
+    }
+}
+
+
+/* =========================================================
+   FIRESTORE CREATE ORDER
+========================================================= */
+
+async function createOrderFirestore(
+    data
+) {
+
+    const storeId =
+        cleanString(
+            data.storeId
+        );
+
+
+    const trackingNumber =
+        cleanString(
+            data.trackingNumber
+        );
+
+
+    const sellingPrice =
+        number(
+            data.sellingPrice
+        );
+
+
+    const deliveryFee =
+        number(
+            data.deliveryFee
+        );
+
+
+    const items =
+        Array.isArray(
+            data.items
+        )
+            ? data.items
+            : [];
+
+
+    if (!storeId) {
+
+        throw new Error(
+            "Please select a store."
+        );
     }
 
+
+    if (!trackingNumber) {
+
+        throw new Error(
+            "Tracking number is required."
+        );
+    }
+
+
+    if (sellingPrice < 0) {
+
+        throw new Error(
+            "Invalid selling price."
+        );
+    }
+
+
+    if (deliveryFee < 0) {
+
+        throw new Error(
+            "Invalid delivery fee."
+        );
+    }
+
+
+    if (
+        items.length === 0
+    ) {
+
+        throw new Error(
+            "Add at least one product."
+        );
+    }
+
+
+    const orderId =
+        makeId("ORD-");
+
+
+    const timestamp =
+        nowISO();
+
+
+    const orderRef =
+        doc(
+            db,
+            COLLECTIONS.orders,
+            orderId
+        );
+
+
+    const trackingQuery =
+        query(
+            collection(
+                db,
+                COLLECTIONS.orders
+            ),
+            where(
+                "TrackingNumber",
+                "==",
+                trackingNumber
+            )
+        );
+
+
+    return runTransaction(
+        db,
+        async transaction => {
+
+            /*
+             * READ PHASE
+             */
+
+            const storeRef =
+                doc(
+                    db,
+                    COLLECTIONS.stores,
+                    storeId
+                );
+
+
+            const storeSnap =
+                await transaction.get(
+                    storeRef
+                );
+
+
+            if (!storeSnap.exists()) {
+
+                throw new Error(
+                    "Store not found."
+                );
+            }
+
+
+            const store =
+                storeSnap.data();
+
+
+            /*
+             * Check tracking number.
+             */
+
+            const existingTracking =
+                await getDocs(
+                    trackingQuery
+                );
+
+
+            if (
+                !existingTracking.empty
+            ) {
+
+                throw new Error(
+                    "This tracking number already exists."
+                );
+            }
+
+
+            /*
+             * Group duplicate products.
+             */
+
+            const requested =
+                new Map();
+
+
+            items.forEach(item => {
+
+                const productId =
+                    cleanString(
+                        item.productId
+                    );
+
+                const variant =
+                    cleanString(
+                        item.variant
+                    );
+
+                const quantity =
+                    number(
+                        item.quantity
+                    );
+
+
+                if (
+                    !productId ||
+                    quantity <= 0
+                ) {
+
+                    throw new Error(
+                        "Invalid product quantity."
+                    );
+                }
+
+
+                const key =
+                    productId +
+                    "||" +
+                    variant;
+
+
+                requested.set(
+                    key,
+                    (
+                        requested.get(key) ||
+                        0
+                    ) +
+                    quantity
+                );
+            });
+
+
+            /*
+             * Read every product.
+             */
+
+            const productRefs =
+                new Map();
+
+
+            const productSnaps =
+                new Map();
+
+
+            for (
+                const item of items
+            ) {
+
+                const productId =
+                    cleanString(
+                        item.productId
+                    );
+
+
+                if (
+                    productRefs.has(
+                        productId
+                    )
+                ) {
+                    continue;
+                }
+
+
+                const productRef =
+                    doc(
+                        db,
+                        COLLECTIONS.products,
+                        productId
+                    );
+
+
+                const productSnap =
+                    await transaction.get(
+                        productRef
+                    );
+
+
+                if (
+                    !productSnap.exists()
+                ) {
+
+                    throw new Error(
+                        "Product not found: " +
+                        productId
+                    );
+                }
+
+
+                productRefs.set(
+                    productId,
+                    productRef
+                );
+
+
+                productSnaps.set(
+                    productId,
+                    productSnap
+                );
+            }
+
+
+            /*
+             * Validate and calculate.
+             */
+
+            const validatedItems = [];
+
+            let totalCost = 0;
+
+
+            for (
+                const [key, requestedQty]
+                of requested
+            ) {
+
+                const parts =
+                    key.split("||");
+
+
+                const productId =
+                    parts[0];
+
+
+                const variant =
+                    parts.slice(1).join("||");
+
+
+                const product =
+                    productSnaps
+                        .get(productId)
+                        .data();
+
+
+                if (
+                    String(
+                        product.StoreId
+                    ) !==
+                    String(storeId)
+                ) {
+
+                    throw new Error(
+                        "Product belongs to another store."
+                    );
+                }
+
+
+                const productName =
+                    cleanString(
+                        product.Name
+                    );
+
+
+                const cost =
+                    number(
+                        product.Cost
+                    );
+
+
+                const attributes =
+                    parseAttributes(
+                        product
+                    );
+
+
+                let availableQty = 0;
+
+
+                if (
+                    Object.keys(
+                        attributes
+                    ).length > 0
+                ) {
+
+                    if (!variant) {
+
+                        throw new Error(
+                            "Please select a variant for " +
+                            productName +
+                            "."
+                        );
+                    }
+
+
+                    if (
+                        attributes[
+                            variant
+                        ] === undefined
+                    ) {
+
+                        throw new Error(
+                            `Variant "${variant}" does not exist for ${productName}.`
+                        );
+                    }
+
+
+                    availableQty =
+                        number(
+                            attributes[
+                                variant
+                            ]
+                        );
+
+                }
+
+                else {
+
+                    availableQty =
+                        number(
+                            product.Qty
+                        );
+                }
+
+
+                if (
+                    requestedQty >
+                    availableQty
+                ) {
+
+                    throw new Error(
+                        productName +
+                        (
+                            variant
+                                ? " (" +
+                                  variant +
+                                  ")"
+                                : ""
+                        ) +
+                        " only has " +
+                        availableQty +
+                        " in stock."
+                    );
+                }
+
+
+                const lineCost =
+                    cost *
+                    requestedQty;
+
+
+                validatedItems.push({
+
+                    productId,
+
+                    productName,
+
+                    variant,
+
+                    quantity:
+                        requestedQty,
+
+                    cost,
+
+                    lineCost,
+
+                    productRef:
+                        productRefs.get(
+                            productId
+                        ),
+
+                    product:
+                        product
+                });
+
+
+                totalCost +=
+                    lineCost;
+            }
+
+
+            /*
+             * WRITE PHASE
+             */
+
+            const productSummary =
+                validatedItems
+                    .map(item => {
+
+                        let text =
+                            item.productName;
+
+
+                        if (
+                            item.variant
+                        ) {
+
+                            text +=
+                                " (" +
+                                item.variant +
+                                ")";
+                        }
+
+
+                        text +=
+                            " x" +
+                            item.quantity;
+
+
+                        return text;
+
+                    })
+                    .join(", ");
+
+
+            const customerTotal =
+                sellingPrice +
+                deliveryFee;
+
+
+            const profit =
+                sellingPrice -
+                totalCost;
+
+
+            /*
+             * Deduct stock.
+             */
+
+            const updatedProducts =
+                new Map();
+
+
+            validatedItems.forEach(
+                item => {
+
+                    if (
+                        updatedProducts.has(
+                            item.productId
+                        )
+                    ) {
+                        return;
+                    }
+
+
+                    const product =
+                        {
+                            ...item.product
+                        };
+
+
+                    const related =
+                        validatedItems.filter(
+                            x =>
+                                x.productId ===
+                                item.productId
+                        );
+
+
+                    const attributes =
+                        parseAttributes(
+                            product
+                        );
+
+
+                    if (
+                        Object.keys(
+                            attributes
+                        ).length > 0
+                    ) {
+
+                        related.forEach(
+                            line => {
+
+                                attributes[
+                                    line.variant
+                                ] =
+                                    number(
+                                        attributes[
+                                            line.variant
+                                        ]
+                                    ) -
+                                    line.quantity;
+
+
+                                if (
+                                    attributes[
+                                        line.variant
+                                    ] <= 0
+                                ) {
+
+                                    delete attributes[
+                                        line.variant
+                                    ];
+                                }
+                            }
+                        );
+
+
+                        const totalQty =
+                            Object.values(
+                                attributes
+                            ).reduce(
+                                (
+                                    total,
+                                    value
+                                ) =>
+                                    total +
+                                    number(
+                                        value
+                                    ),
+                                0
+                            );
+
+
+                        transaction.update(
+                            item.productRef,
+                            {
+                                Qty:
+                                    totalQty,
+
+                                Attributes:
+                                    attributes
+                            }
+                        );
+
+                    }
+
+                    else {
+
+                        let newQty =
+                            number(
+                                product.Qty
+                            );
+
+
+                        related.forEach(
+                            line => {
+
+                                newQty -=
+                                    line.quantity;
+                            }
+                        );
+
+
+                        if (
+                            newQty < 0
+                        ) {
+
+                            throw new Error(
+                                "Stock cannot become negative."
+                            );
+                        }
+
+
+                        transaction.update(
+                            item.productRef,
+                            {
+                                Qty:
+                                    newQty
+                            }
+                        );
+                    }
+
+
+                    updatedProducts.set(
+                        item.productId,
+                        true
+                    );
+                }
+            );
+
+
+            /*
+             * Create order.
+             */
+
+            transaction.set(
+                orderRef,
+                {
+                    OrderId:
+                        orderId,
+
+                    Timestamp:
+                        timestamp,
+
+                    User:
+                        currentUser || "",
+
+                    StoreId:
+                        storeId,
+
+                    StoreName:
+                        store.StoreName || "",
+
+                    Products:
+                        productSummary,
+
+                    TotalCost:
+                        totalCost,
+
+                    SellingPrice:
+                        sellingPrice,
+
+                    DeliveryFee:
+                        deliveryFee,
+
+                    CustomerTotal:
+                        customerTotal,
+
+                    Profit:
+                        profit,
+
+                    TrackingNumber:
+                        trackingNumber,
+
+                    Status:
+                        "Waiting",
+
+                    StockRestored:
+                        false
+                }
+            );
+
+
+            /*
+             * Create order items.
+             */
+
+            validatedItems.forEach(
+                (item, index) => {
+
+                    const itemId =
+                        orderId +
+                        "-ITEM-" +
+                        (index + 1);
+
+
+                    transaction.set(
+                        doc(
+                            db,
+                            COLLECTIONS.orderItems,
+                            itemId
+                        ),
+                        {
+                            OrderItemId:
+                                itemId,
+
+                            OrderId:
+                                orderId,
+
+                            ProductId:
+                                item.productId,
+
+                            ProductName:
+                                item.productName,
+
+                            Variant:
+                                item.variant,
+
+                            Quantity:
+                                item.quantity,
+
+                            Cost:
+                                item.cost,
+
+                            LineCost:
+                                item.lineCost
+                        }
+                    );
+                }
+            );
+
+
+            return {
+                OrderId:
+                    orderId,
+
+                Timestamp:
+                    timestamp,
+
+                User:
+                    currentUser || "",
+
+                StoreId:
+                    storeId,
+
+                StoreName:
+                    store.StoreName || "",
+
+                Products:
+                    productSummary,
+
+                TotalCost:
+                    totalCost,
+
+                SellingPrice:
+                    sellingPrice,
+
+                DeliveryFee:
+                    deliveryFee,
+
+                CustomerTotal:
+                    customerTotal,
+
+                Profit:
+                    profit,
+
+                TrackingNumber:
+                    trackingNumber,
+
+                Status:
+                    "Waiting",
+
+                StockRestored:
+                    false
+            };
+        }
+    );
 }
 
 
@@ -3047,8 +4971,9 @@ function renderOrdersList() {
         );
 
 
-    if (!container)
+    if (!container) {
         return;
+    }
 
 
     container.innerHTML = "";
@@ -3060,18 +4985,26 @@ function renderOrdersList() {
     ) {
 
         container.innerHTML = `
-            <small style="color:var(--text-muted);">
+            <small
+                style="color:var(--text-muted);">
                 No orders yet.
             </small>
         `;
 
         return;
-
     }
 
 
     [...allOrders]
-        .reverse()
+        .sort(
+            (a, b) =>
+                new Date(
+                    b.Timestamp || 0
+                ) -
+                new Date(
+                    a.Timestamp || 0
+                )
+        )
         .forEach(order => {
 
             const card =
@@ -3089,9 +5022,9 @@ function renderOrdersList() {
 
 
             const profit =
-                parseFloat(
+                number(
                     order.Profit
-                ) || 0;
+                );
 
 
             const status =
@@ -3104,25 +5037,32 @@ function renderOrdersList() {
 
 
             if (
-                status === "Delivered"
-            )
+                status ===
+                "Delivered"
+            ) {
                 statusColor =
                     "var(--success)";
+            }
 
 
             if (
-                status === "Waiting for return"
-            )
+                status ===
+                "Waiting for return"
+            ) {
                 statusColor =
                     "#f59e0b";
+            }
 
 
             if (
-                status === "Returned" ||
-                status === "Cancelled"
-            )
+                status ===
+                "Returned" ||
+                status ===
+                "Cancelled"
+            ) {
                 statusColor =
                     "var(--danger)";
+            }
 
 
             card.innerHTML = `
@@ -3145,7 +5085,9 @@ function renderOrdersList() {
                             color:${statusColor};
                         ">
 
-                        ${escapeHtml(status)}
+                        ${escapeHtml(
+                            status
+                        )}
 
                     </strong>
 
@@ -3172,6 +5114,7 @@ function renderOrdersList() {
                 <small>
 
                     Tracking:
+
                     <strong>
                         ${escapeHtml(
                             order.TrackingNumber || ""
@@ -3199,10 +5142,8 @@ function renderOrdersList() {
                         </small>
 
                         <strong>
-                            $${(
-                                parseFloat(
-                                    order.TotalCost
-                                ) || 0
+                            $${number(
+                                order.TotalCost
                             ).toFixed(2)}
                         </strong>
                     </div>
@@ -3214,10 +5155,8 @@ function renderOrdersList() {
                         </small>
 
                         <strong>
-                            $${(
-                                parseFloat(
-                                    order.SellingPrice
-                                ) || 0
+                            $${number(
+                                order.SellingPrice
                             ).toFixed(2)}
                         </strong>
                     </div>
@@ -3229,10 +5168,8 @@ function renderOrdersList() {
                         </small>
 
                         <strong>
-                            $${(
-                                parseFloat(
-                                    order.DeliveryFee
-                                ) || 0
+                            $${number(
+                                order.DeliveryFee
                             ).toFixed(2)}
                         </strong>
                     </div>
@@ -3246,9 +5183,11 @@ function renderOrdersList() {
                         <strong
                             style="
                                 color:
-                                ${profit >= 0
-                                    ? "var(--success)"
-                                    : "var(--danger)"};
+                                ${
+                                    profit >= 0
+                                        ? "var(--success)"
+                                        : "var(--danger)"
+                                };
                             ">
 
                             $${profit.toFixed(2)}
@@ -3262,6 +5201,7 @@ function renderOrdersList() {
                 ${
                     status ===
                     "Waiting for return"
+
                         ? `
 
                         <button
@@ -3289,23 +5229,21 @@ function renderOrdersList() {
                         </button>
 
                         `
+
                         : ""
                 }
-
             `;
 
 
             container.appendChild(
                 card
             );
-
         });
-
 }
 
 
 /* =========================================================
-   MARK RETURNED (manual button on an order card)
+   UPDATE ORDER STATUS
 ========================================================= */
 
 async function markOrderReturned(
@@ -3316,59 +5254,17 @@ async function markOrderReturned(
         !confirm(
             "Confirm that this order has actually returned?"
         )
-    )
+    ) {
         return;
+    }
 
 
     try {
 
-        const response =
-            await fetch(
-                API_URL,
-                {
-
-                    method: "POST",
-
-                    body:
-                        JSON.stringify({
-
-                            actionType:
-                                "update_order_status",
-
-                            orderId:
-                                orderId,
-
-                            status:
-                                "Returned"
-
-                        }),
-
-                    headers: {
-
-                        "Content-Type":
-                            "text/plain;charset=utf-8"
-
-                    }
-
-                }
-            );
-
-
-        const result =
-            await response.json();
-
-
-        if (
-            result.status !==
-            "success"
-        ) {
-
-            throw new Error(
-                result.message ||
-                "Failed to update order."
-            );
-
-        }
+        await updateOrderStatus(
+            orderId,
+            "Returned"
+        );
 
 
         await loadData();
@@ -3381,15 +5277,534 @@ async function markOrderReturned(
             error.message ||
             "Failed to update order."
         );
-
     }
-
 }
 
 
 /* =========================================================
-   QR SCANNER (single tracking-number capture, used at
-   checkout time to fill in the tracking field)
+   FIRESTORE ORDER STATUS
+========================================================= */
+
+async function updateOrderStatus(
+    orderId,
+    newStatus
+) {
+
+    await requireAuth();
+
+
+    const allowedStatuses = [
+        "Waiting",
+        "Delivered",
+        "Waiting for return",
+        "Returned",
+        "Cancelled"
+    ];
+
+
+    if (
+        !allowedStatuses.includes(
+            newStatus
+        )
+    ) {
+
+        throw new Error(
+            "Invalid order status."
+        );
+    }
+
+
+    const orderRef =
+        doc(
+            db,
+            COLLECTIONS.orders,
+            orderId
+        );
+
+
+    await runTransaction(
+        db,
+        async transaction => {
+
+            /*
+             * READ ORDER FIRST.
+             */
+
+            const orderSnap =
+                await transaction.get(
+                    orderRef
+                );
+
+
+            if (
+                !orderSnap.exists()
+            ) {
+
+                throw new Error(
+                    "Order not found."
+                );
+            }
+
+
+            const order =
+                orderSnap.data();
+
+
+            const currentStatus =
+                cleanString(
+                    order.Status
+                );
+
+
+            const alreadyRestored =
+                order.StockRestored === true ||
+                String(
+                    order.StockRestored
+                ).toUpperCase() ===
+                    "TRUE";
+
+
+            /*
+             * Delivered.
+             */
+
+            if (
+                newStatus ===
+                "Delivered"
+            ) {
+
+                if (
+                    currentStatus !==
+                    "Delivered"
+                ) {
+
+                    const sellingPrice =
+                        number(
+                            order.SellingPrice
+                        );
+
+
+                    if (
+                        sellingPrice < 0
+                    ) {
+
+                        throw new Error(
+                            "Invalid selling price."
+                        );
+                    }
+
+
+                    if (
+                        sellingPrice > 0
+                    ) {
+
+                        const txId =
+                            makeId("TX-");
+
+
+                        transaction.set(
+                            doc(
+                                db,
+                                COLLECTIONS.transactions,
+                                txId
+                            ),
+                            {
+                                Timestamp:
+                                    nowISO(),
+
+                                User:
+                                    order.User ||
+                                    currentUser ||
+                                    "",
+
+                                Action:
+                                    "Add",
+
+                                Amount:
+                                    sellingPrice,
+
+                                Category:
+                                    "Work",
+
+                                Profile:
+                                    "",
+
+                                Notes:
+                                    "Delivered Order " +
+                                    orderId +
+                                    " | Store: " +
+                                    (
+                                        order.StoreName ||
+                                        ""
+                                    ) +
+                                    " | Profit: " +
+                                    number(
+                                        order.Profit
+                                    )
+                            }
+                        );
+                    }
+                }
+
+
+                transaction.update(
+                    orderRef,
+                    {
+                        Status:
+                            "Delivered"
+                    }
+                );
+
+
+                return;
+            }
+
+
+            /*
+             * Waiting.
+             */
+
+            if (
+                newStatus ===
+                "Waiting"
+            ) {
+
+                transaction.update(
+                    orderRef,
+                    {
+                        Status:
+                            "Waiting"
+                    }
+                );
+
+                return;
+            }
+
+
+            /*
+             * Waiting for return.
+             */
+
+            if (
+                newStatus ===
+                "Waiting for return"
+            ) {
+
+                transaction.update(
+                    orderRef,
+                    {
+                        Status:
+                            "Waiting for return"
+                    }
+                );
+
+                return;
+            }
+
+
+            /*
+             * Returned / Cancelled.
+             *
+             * Restore exact OrderItems once.
+             */
+
+            if (
+                (
+                    newStatus ===
+                        "Returned" ||
+                    newStatus ===
+                        "Cancelled"
+                ) &&
+                !alreadyRestored
+            ) {
+
+                const itemsQuery =
+                    query(
+                        collection(
+                            db,
+                            COLLECTIONS.orderItems
+                        ),
+                        where(
+                            "OrderId",
+                            "==",
+                            orderId
+                        )
+                    );
+
+
+                const itemsSnapshot =
+                    await getDocs(
+                        itemsQuery
+                    );
+
+
+                if (
+                    itemsSnapshot.empty
+                ) {
+
+                    throw new Error(
+                        "No products found for this order."
+                    );
+                }
+
+
+                const productChanges =
+                    new Map();
+
+
+                itemsSnapshot.docs
+                    .forEach(
+                        itemDoc => {
+
+                            const item =
+                                itemDoc.data();
+
+
+                            const productId =
+                                cleanString(
+                                    item.ProductId
+                                );
+
+
+                            if (
+                                !productChanges.has(
+                                    productId
+                                )
+                            ) {
+
+                                productChanges.set(
+                                    productId,
+                                    []
+                                );
+                            }
+
+
+                            productChanges
+                                .get(
+                                    productId
+                                )
+                                .push(
+                                    item
+                                );
+                        }
+                    );
+
+
+                /*
+                 * Read all affected products
+                 * before writing.
+                 */
+
+                const productSnapshots =
+                    new Map();
+
+
+                for (
+                    const productId
+                    of productChanges.keys()
+                ) {
+
+                    const productRef =
+                        doc(
+                            db,
+                            COLLECTIONS.products,
+                            productId
+                        );
+
+
+                    const productSnap =
+                        await transaction.get(
+                            productRef
+                        );
+
+
+                    if (
+                        !productSnap.exists()
+                    ) {
+
+                        throw new Error(
+                            "Product " +
+                            productId +
+                            " no longer exists."
+                        );
+                    }
+
+
+                    productSnapshots.set(
+                        productId,
+                        {
+                            ref:
+                                productRef,
+
+                            data:
+                                productSnap.data()
+                        }
+                    );
+                }
+
+
+                /*
+                 * Restore stock.
+                 */
+
+                for (
+                    const [
+                        productId,
+                        items
+                    ]
+                    of productChanges
+                ) {
+
+                    const productInfo =
+                        productSnapshots.get(
+                            productId
+                        );
+
+
+                    const product =
+                        productInfo.data;
+
+
+                    const attributes =
+                        parseAttributes(
+                            product
+                        );
+
+
+                    const hasVariants =
+                        Object.keys(
+                            attributes
+                        ).length > 0;
+
+
+                    if (
+                        hasVariants
+                    ) {
+
+                        items.forEach(
+                            item => {
+
+                                const variant =
+                                    cleanString(
+                                        item.Variant
+                                    );
+
+
+                                if (
+                                    !variant
+                                ) {
+
+                                    throw new Error(
+                                        "Missing variant while restoring " +
+                                        product.Name
+                                    );
+                                }
+
+
+                                attributes[
+                                    variant
+                                ] =
+                                    number(
+                                        attributes[
+                                            variant
+                                        ]
+                                    ) +
+                                    number(
+                                        item.Quantity
+                                    );
+                            }
+                        );
+
+
+                        const totalQty =
+                            Object.values(
+                                attributes
+                            ).reduce(
+                                (
+                                    total,
+                                    value
+                                ) =>
+                                    total +
+                                    number(
+                                        value
+                                    ),
+                                0
+                            );
+
+
+                        transaction.update(
+                            productInfo.ref,
+                            {
+                                Qty:
+                                    totalQty,
+
+                                Attributes:
+                                    attributes
+                            }
+                        );
+
+                    }
+
+                    else {
+
+                        const added =
+                            items.reduce(
+                                (
+                                    total,
+                                    item
+                                ) =>
+                                    total +
+                                    number(
+                                        item.Quantity
+                                    ),
+                                0
+                            );
+
+
+                        transaction.update(
+                            productInfo.ref,
+                            {
+                                Qty:
+                                    number(
+                                        product.Qty
+                                    ) +
+                                    added
+                            }
+                        );
+                    }
+                }
+
+
+                transaction.update(
+                    orderRef,
+                    {
+                        Status:
+                            newStatus,
+
+                        StockRestored:
+                            true
+                    }
+                );
+
+
+                return;
+            }
+
+
+            transaction.update(
+                orderRef,
+                {
+                    Status:
+                        newStatus
+                }
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   QR SCANNER
 ========================================================= */
 
 async function openQrScanner() {
@@ -3398,6 +5813,11 @@ async function openQrScanner() {
         document.getElementById(
             "qrScannerModal"
         );
+
+
+    if (!modal) {
+        return;
+    }
 
 
     modal.style.display =
@@ -3426,7 +5846,6 @@ async function openQrScanner() {
                     width: 250,
                     height: 250
                 }
-
             },
 
             decodedText => {
@@ -3444,19 +5863,9 @@ async function openQrScanner() {
 
 
                 closeQrScanner();
-
             },
 
-            errorMessage => {
-
-                /*
-                 * Scanner continuously reports
-                 * frames without a QR code.
-                 * We intentionally ignore these.
-                 */
-
-            }
-
+            () => {}
         );
 
     }
@@ -3473,10 +5882,9 @@ async function openQrScanner() {
             "Could not start the camera. You can enter the tracking number manually."
         );
 
+
         closeQrScanner();
-
     }
-
 }
 
 
@@ -3495,31 +5903,28 @@ async function closeQrScanner() {
             if (
                 qrScanner.isScanning
             ) {
-
                 await qrScanner.stop();
-
             }
 
-        }
+        } catch (e) {}
 
-        catch (e) {}
 
         try {
 
             await qrScanner.clear();
 
-        }
+        } catch (e) {}
 
-        catch (e) {}
 
         qrScanner = null;
-
     }
 
 
-    modal.style.display =
-        "none";
+    if (modal) {
 
+        modal.style.display =
+            "none";
+    }
 }
 
 
@@ -3531,17 +5936,11 @@ function extractTrackingNumber(
     value
 ) {
 
-    let text =
+    const text =
         String(
-            value ||
-            ""
+            value || ""
         ).trim();
 
-
-    /*
-     * If the QR contains an EcoTrack URL,
-     * extract the tracking code from it.
-     */
 
     try {
 
@@ -3566,14 +5965,13 @@ function extractTrackingNumber(
 
 
             if (
-                last.toUpperCase()
+                last
+                    .toUpperCase()
                     .startsWith("ECP")
             ) {
 
                 return last;
-
             }
-
         }
 
     }
@@ -3582,36 +5980,24 @@ function extractTrackingNumber(
 
 
     return text;
-
 }
 
 
 /* =========================================================
-   CONTINUOUS RETURN SCANNER
-
-   Scans tracking QR codes back-to-back. Every code that
-   matches an order marks that order as "Returned", which
-   the backend uses to restore the exact products/variants
-   from OrderItems back into stock exactly once.
-
-   This does NOT touch cash - money was only added to the
-   Money tab when the order became Delivered, so a return
-   never removes money that was never added in the first
-   place. Store profit is calculated from Delivered orders
-   only, so a return simply stops that order from ever
-   counting toward profit again (it already didn't, unless
-   it had been Delivered previously).
+   RETURN SCANNER
 ========================================================= */
-
-let returnScanner = null;
-const returnScanCooldown = new Map(); // trackingNumber(lowercase) -> last attempt timestamp
-
 
 function openReturnScanner() {
 
-    document.getElementById(
-        "returnScanLog"
-    ).innerHTML = "";
+    const log =
+        document.getElementById(
+            "returnScanLog"
+        );
+
+
+    if (log) {
+        log.innerHTML = "";
+    }
 
 
     document.getElementById(
@@ -3621,7 +6007,6 @@ function openReturnScanner() {
 
 
     startReturnScanner();
-
 }
 
 
@@ -3656,16 +6041,7 @@ async function startReturnScanner() {
                     decodedText
                 ),
 
-            errorMessage => {
-
-                /*
-                 * Ignore per-frame "no QR code found"
-                 * noise - this fires continuously while
-                 * the camera is idle between codes.
-                 */
-
-            }
-
+            () => {}
         );
 
     }
@@ -3684,9 +6060,7 @@ async function startReturnScanner() {
 
 
         closeReturnScanner();
-
     }
-
 }
 
 
@@ -3699,25 +6073,20 @@ async function closeReturnScanner() {
             if (
                 returnScanner.isScanning
             ) {
-
                 await returnScanner.stop();
-
             }
 
-        }
+        } catch (e) {}
 
-        catch (e) {}
 
         try {
 
             await returnScanner.clear();
 
-        }
+        } catch (e) {}
 
-        catch (e) {}
 
         returnScanner = null;
-
     }
 
 
@@ -3728,11 +6097,13 @@ async function closeReturnScanner() {
         "returnScannerModal"
     ).style.display =
         "none";
-
 }
 
 
-function logReturnScan(message, type) {
+function logReturnScan(
+    message,
+    type
+) {
 
     const log =
         document.getElementById(
@@ -3740,12 +6111,15 @@ function logReturnScan(message, type) {
         );
 
 
-    if (!log)
+    if (!log) {
         return;
+    }
 
 
     const entry =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     const bg =
@@ -3790,11 +6164,12 @@ function logReturnScan(message, type) {
         entry,
         log.firstChild
     );
-
 }
 
 
-async function handleReturnScan(decodedText) {
+async function handleReturnScan(
+    decodedText
+) {
 
     const trackingNumber =
         extractTrackingNumber(
@@ -3802,8 +6177,9 @@ async function handleReturnScan(decodedText) {
         );
 
 
-    if (!trackingNumber)
+    if (!trackingNumber) {
         return;
+    }
 
 
     const key =
@@ -3815,22 +6191,17 @@ async function handleReturnScan(decodedText) {
 
 
     const lastAttempt =
-        returnScanCooldown.get(key);
+        returnScanCooldown.get(
+            key
+        );
 
-
-    /*
-     * The camera fires this callback on every frame
-     * the same QR code is visible - debounce repeats
-     * from a single physical scan.
-     */
 
     if (
         lastAttempt &&
-        now - lastAttempt < 4000
+        now - lastAttempt <
+            4000
     ) {
-
         return;
-
     }
 
 
@@ -3843,11 +6214,10 @@ async function handleReturnScan(decodedText) {
     const order =
         allOrders.find(
             o =>
-                String(
-                    o.TrackingNumber || ""
-                )
-                    .trim()
-                    .toLowerCase() === key
+                cleanString(
+                    o.TrackingNumber
+                ).toLowerCase() ===
+                key
         );
 
 
@@ -3859,11 +6229,13 @@ async function handleReturnScan(decodedText) {
         );
 
         return;
-
     }
 
 
-    if (order.Status === "Returned") {
+    if (
+        order.Status ===
+        "Returned"
+    ) {
 
         logReturnScan(
             `${trackingNumber} — already marked Returned`,
@@ -3871,11 +6243,13 @@ async function handleReturnScan(decodedText) {
         );
 
         return;
-
     }
 
 
-    if (order.Status === "Cancelled") {
+    if (
+        order.Status ===
+        "Cancelled"
+    ) {
 
         logReturnScan(
             `${trackingNumber} — order was Cancelled, skipping`,
@@ -3883,59 +6257,15 @@ async function handleReturnScan(decodedText) {
         );
 
         return;
-
     }
 
 
     try {
 
-        const response =
-            await fetch(
-                API_URL,
-                {
-
-                    method: "POST",
-
-                    body:
-                        JSON.stringify({
-
-                            actionType:
-                                "update_order_status",
-
-                            orderId:
-                                order.OrderId,
-
-                            status:
-                                "Returned"
-
-                        }),
-
-                    headers: {
-
-                        "Content-Type":
-                            "text/plain;charset=utf-8"
-
-                    }
-
-                }
-            );
-
-
-        const result =
-            await response.json();
-
-
-        if (
-            result.status !==
-            "success"
-        ) {
-
-            throw new Error(
-                result.message ||
-                "Failed to mark order as returned."
-            );
-
-        }
+        await updateOrderStatus(
+            order.OrderId,
+            "Returned"
+        );
 
 
         logReturnScan(
@@ -3945,9 +6275,7 @@ async function handleReturnScan(decodedText) {
 
 
         /*
-         * Refresh in the background so stock, cash and
-         * store totals stay in sync while scanning
-         * continues uninterrupted.
+         * Refresh without stopping scanner.
          */
 
         loadData();
@@ -3962,15 +6290,10 @@ async function handleReturnScan(decodedText) {
         );
 
 
-        /*
-         * Let a genuine failure be retried sooner than
-         * the normal debounce window.
-         */
-
-        returnScanCooldown.delete(key);
-
+        returnScanCooldown.delete(
+            key
+        );
     }
-
 }
 
 
@@ -3998,7 +6321,6 @@ function setupCheckoutEvents() {
             "input",
             updateCheckoutSummary
         );
-
     }
 
 
@@ -4008,23 +6330,207 @@ function setupCheckoutEvents() {
             "input",
             updateCheckoutSummary
         );
-
     }
-
 }
 
 
 /* =========================================================
-   START
+   MODAL EVENTS
 ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
+function setupModalEvents() {
+
+    window.addEventListener(
+        "click",
+        event => {
+
+            const profileModal =
+                document.getElementById(
+                    "profileModal"
+                );
+
+
+            if (
+                profileModal &&
+                event.target ===
+                    profileModal
+            ) {
+
+                closeModal();
+            }
+        }
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key !==
+                "Escape"
+            ) {
+                return;
+            }
+
+
+            closeModal();
+
+            closeProductModal();
+
+            closeAdModal();
+
+            closeQrScanner();
+
+            closeReturnScanner();
+        }
+    );
+}
+
+
+/* =========================================================
+   STARTUP
+========================================================= */
+
+async function startup() {
+
+    try {
+
+        await requireAuth();
+
+        setupMoneyForm();
 
         setupCheckoutEvents();
 
+        setupModalEvents();
+
+        handleCategoryChange();
+
         renderCheckoutItems();
 
+
+        console.log(
+            "EcoTrack Firebase initialized."
+        );
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Firebase startup error:",
+            error
+        );
+    }
+}
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    startup
+);
+
+
+/* =========================================================
+   EXPOSE FUNCTIONS TO HTML
+=========================================================
+
+   Your existing HTML uses onclick / onchange handlers.
+   ES modules are normally scoped, so these functions need
+   to be placed on window.
+========================================================= */
+
+Object.assign(
+    window,
+    {
+
+        selectUser,
+
+        switchUser,
+
+        switchTab,
+
+        handleCategoryChange,
+
+        loadData,
+
+        openProfile,
+
+        openDebtProfile,
+
+        submitModalDebt,
+
+        showModalHistory,
+
+        closeModal,
+
+        cancelTransaction,
+
+        createStore,
+
+        renderStoresList,
+
+        openStoreDetail,
+
+        backToStores,
+
+        renderStoreDetail,
+
+        openAddProductModal,
+
+        editProduct,
+
+        closeProductModal,
+
+        submitProduct,
+
+        addNewVariantInline,
+
+        adjustVariantInline,
+
+        openAddAdModal,
+
+        closeAdModal,
+
+        submitAd,
+
+        renderCheckoutStores,
+
+        checkoutStoreChanged,
+
+        checkoutProductChanged,
+
+        getProductTotalQty,
+
+        addCheckoutProduct,
+
+        removeCheckoutProduct,
+
+        renderCheckoutItems,
+
+        updateCheckoutSummary,
+
+        createCheckoutOrder,
+
+        renderOrdersList,
+
+        markOrderReturned,
+
+        openQrScanner,
+
+        closeQrScanner,
+
+        extractTrackingNumber,
+
+        openReturnScanner,
+
+        startReturnScanner,
+
+        closeReturnScanner,
+
+        handleReturnScan,
+
+        logReturnScan
     }
 );
